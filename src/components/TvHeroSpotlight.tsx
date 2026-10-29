@@ -33,7 +33,14 @@ export const TvHeroSpotlight: React.FC<TvHeroSpotlightProps> = ({ video, onPlay 
   const isCompleted = video.is_completed || progress >= 99;
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden mb-6 border border-white/10 bg-[#0F172A] shadow-lg">
+    <div
+      onClick={() => onPlay(video.slug)}
+      className={`relative w-full rounded-2xl overflow-hidden mb-8 border-2 transition-colors duration-100 bg-[#0F172A] shadow-md cursor-pointer ${
+        playFocus.isFocused
+          ? 'border-brand ring-2 ring-brand/40 shadow-lg'
+          : 'border-white/10'
+      }`}
+    >
       {/* Background artwork with subtle horizontal fade */}
       <div className="absolute inset-0 pointer-events-none">
         {backdropSrc && !backdropError && (
@@ -41,7 +48,7 @@ export const TvHeroSpotlight: React.FC<TvHeroSpotlightProps> = ({ video, onPlay 
             src={backdropSrc}
             alt={video.title}
             onError={handleBackdropError}
-            className="w-full h-full object-cover object-center opacity-35"
+            className="w-full h-full object-cover object-center opacity-30"
             loading="eager"
           />
         )}
@@ -79,11 +86,14 @@ export const TvHeroSpotlight: React.FC<TvHeroSpotlightProps> = ({ video, onPlay 
         <div className="flex items-center gap-3 pt-3">
           <button
             ref={playFocus.ref}
-            onClick={() => onPlay(video.slug)}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-100 cursor-pointer ${
+            onClick={(e) => {
+              e.stopPropagation();
+              onPlay(video.slug);
+            }}
+            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-colors duration-100 cursor-pointer ${
               playFocus.isFocused
-                ? 'bg-brand text-slate-950 font-black scale-105 shadow-tv-focus ring-2 ring-white/90'
-                : 'bg-white hover:bg-zinc-200 text-slate-950 shadow'
+                ? 'bg-brand text-slate-950 font-black ring-2 ring-white'
+                : 'bg-white text-slate-950'
             }`}
           >
             <Play className="w-4 h-4 fill-current ml-0.5" />

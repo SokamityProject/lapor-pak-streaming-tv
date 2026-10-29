@@ -1,10 +1,9 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { WatchVideoDetails } from '../types/api';
 import { saveProgress, fetchWatchDetails } from '../services/api';
-import { Play, Pause, RotateCcw, RotateCw, ArrowLeft, Shield, RefreshCw, AlertTriangle, Volume2, Volume1 } from 'lucide-react';
+import { Play, Pause, RotateCcw, RotateCw, ArrowLeft, Shield, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useTvFocus } from '../hooks/useTvFocus';
 import { SpatialNavigation } from '../services/navigation';
-import { AudioMode, getAudioMode, toggleAudioMode, initAudioMode } from '../services/audioMode';
 
 export interface PlayerCallbacks {
   onCenterClick: () => void;
@@ -21,7 +20,7 @@ export function handlePlayerRemoteKey(
   const key = event.key;
   const keyCode = event.keyCode;
 
-  // Toggle Audio Mode (Voice Focus) via D-pad Up, ArrowUp, or 'A' key
+  // Optional audio mode toggle handler for unit test compatibility
   if (
     key === 'ArrowUp' ||
     key === 'Up' ||
@@ -117,7 +116,6 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   const [hudMessage, setHudMessage] = useState<string | null>(null);
   const [hasPlaybackError, setHasPlaybackError] = useState(false);
   const [isRefreshingLink, setIsRefreshingLink] = useState(false);
-  const [audioMode, setAudioModeState] = useState<AudioMode>(getAudioMode());
 
   const osdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hudTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -125,10 +123,6 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   const pendingSeekRef = useRef<number | null>(video.resume_time > 0 ? video.resume_time : null);
   const showOsdRef = useRef(showOsd);
   showOsdRef.current = showOsd;
-
-  useEffect(() => {
-    initAudioMode();
-  }, []);
 
   const resetOsdTimer = useCallback(() => {
     setShowOsd(true);
@@ -145,13 +139,6 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
       setHudMessage(null);
     }, 1500);
   }, []);
-
-  const handleToggleAudioMode = useCallback(() => {
-    const next = toggleAudioMode();
-    setAudioModeState(next);
-    showHud(next === 'voice_focus' ? 'FOKUS SUARA: AKTIF 🗣️' : 'AUDIO: STANDAR 🔊');
-    resetOsdTimer();
-  }, [showHud, resetOsdTimer]);
 
   const togglePlay = useCallback(() => {
     if (videoRef.current) {
@@ -261,7 +248,6 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   // Remote keyboard listener when player is active
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If error screen is shown, handle Back key to exit player
       if (hasPlaybackError) {
         if (
           e.key === 'Escape' ||
@@ -282,7 +268,6 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
         onTogglePlay: togglePlay,
         onSeek: seek,
         onBack: handleBack,
-        onToggleAudioMode: handleToggleAudioMode,
       });
       if (handled) {
         e.preventDefault();
@@ -349,39 +334,39 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#070A0F] flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden">
       {hasPlaybackError ? (
-        <div className="flex flex-col items-center justify-center p-10 max-w-lg text-center z-50 bg-[#0C111A]/95 border border-white/10 rounded-3xl shadow-2xl backdrop-blur-xl">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-5 text-amber-500 shadow-lg">
-            <AlertTriangle className="w-8 h-8" />
+        <div className="flex flex-col items-center justify-center p-8 max-w-lg text-center z-50 bg-[#0F172A] border border-white/10 rounded-2xl shadow-2xl">
+          <div className="w-14 h-14 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center mb-4 text-brand">
+            <AlertTriangle className="w-7 h-7" />
           </div>
-          <h2 className="text-2xl font-black text-white mb-2">Tautan Video Kedaluwarsa</h2>
-          <p className="text-zinc-400 text-xs sm:text-sm mb-8 leading-relaxed">
+          <h2 className="text-xl font-black text-white mb-2">Tautan Video Kedaluwarsa</h2>
+          <p className="text-zinc-400 text-xs mb-6 leading-relaxed">
             Tautan streaming Facebook memiliki batas waktu keamanan berkala. Tekan tombol di bawah untuk menyegarkan tautan secara otomatis.
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               ref={retryBtnFocus.ref}
               onClick={refreshStreamUrl}
               disabled={isRefreshingLink}
-              className={`flex items-center gap-2.5 px-7 py-3.5 rounded-xl font-black text-sm transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors duration-100 cursor-pointer ${
                 retryBtnFocus.isFocused
-                  ? 'bg-amber-500 text-slate-950 scale-108 shadow-tv-focus ring-4 ring-white/60'
-                  : 'bg-amber-500 text-slate-950 hover:bg-amber-400'
+                  ? 'bg-brand text-slate-950 ring-2 ring-white'
+                  : 'bg-brand text-slate-950 hover:bg-amber-400'
               }`}
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshingLink ? 'animate-spin' : ''}`} />
-              <span>{isRefreshingLink ? 'Menyegarkan Tautan...' : 'Segarkan Tautan (OK)'}</span>
+              <span>{isRefreshingLink ? 'Menyegarkan...' : 'Segarkan Tautan (OK)'}</span>
             </button>
 
             <button
               ref={exitBtnFocus.ref}
               onClick={onClose}
-              className={`px-6 py-3.5 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer ${
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-colors duration-100 cursor-pointer ${
                 exitBtnFocus.isFocused
-                  ? 'bg-white/20 text-white scale-108 ring-2 ring-white shadow-tv-focus'
-                  : 'bg-white/10 text-zinc-300 hover:bg-white/15 border border-white/10'
+                  ? 'bg-white/20 text-white ring-2 ring-white'
+                  : 'bg-white/10 text-zinc-300 border border-white/10'
               }`}
             >
               Kembali
@@ -411,20 +396,20 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
             }}
           />
 
-          {/* Center HUD Feedback matching YouTube Web polish */}
+          {/* Center HUD Feedback */}
           {hudMessage && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-[#0C111A]/90 backdrop-blur-2xl border border-white/15 text-amber-400 px-8 py-5 rounded-3xl flex items-center gap-4 text-2xl font-black shadow-2xl animate-fade-in">
+              <div className="bg-[#0F172A]/90 border border-white/20 text-brand px-6 py-3.5 rounded-2xl flex items-center gap-3 text-xl font-black shadow-2xl">
                 {hudMessage === 'PLAY' ? (
-                  <Play className="w-8 h-8 fill-current" />
+                  <Play className="w-6 h-6 fill-current" />
                 ) : hudMessage === 'PAUSE' ? (
-                  <Pause className="w-8 h-8 fill-current" />
+                  <Pause className="w-6 h-6 fill-current" />
                 ) : hudMessage.startsWith('+') ? (
-                  <RotateCw className="w-8 h-8 text-amber-400" />
+                  <RotateCw className="w-6 h-6 text-brand" />
                 ) : hudMessage.startsWith('-') ? (
-                  <RotateCcw className="w-8 h-8 text-amber-400" />
+                  <RotateCcw className="w-6 h-6 text-brand" />
                 ) : (
-                  <RefreshCw className="w-8 h-8 text-amber-400 animate-spin" />
+                  <RefreshCw className="w-6 h-6 text-brand animate-spin" />
                 )}
                 <span>{hudMessage}</span>
               </div>
@@ -433,71 +418,48 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
 
           {/* On-Screen Display (OSD) Overlay */}
           <div
-            className={`absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/80 flex flex-col justify-between p-10 md:p-14 transition-opacity duration-300 pointer-events-none ${
+            className={`absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/80 flex flex-col justify-between p-8 md:p-10 transition-opacity duration-200 pointer-events-none ${
               showOsd ? 'opacity-100' : 'opacity-0'
             }`}
           >
             {/* Top Header */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={handleBack}
-                  className="w-11 h-11 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center backdrop-blur-xl shadow-lg cursor-pointer pointer-events-auto"
+                  className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white flex items-center justify-center shadow cursor-pointer pointer-events-auto"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="bg-amber-500 text-slate-950 font-black text-[11px] px-2 py-0.5 rounded shadow-sm">
+                    <span className="bg-brand text-slate-950 font-black text-[10px] px-2 py-0.5 rounded shadow">
                       EPS. {video.episode}
                     </span>
-                    <span className="text-zinc-400 text-xs font-semibold">
-                      Lapor Pak! Command Streaming Station
+                    <span className="text-zinc-400 text-xs">
+                      Lapor Pak! Streaming TV
                     </span>
                   </div>
-                  <h2 className="text-xl md:text-2xl font-black text-white mt-1 tracking-tight drop-shadow">
+                  <h2 className="text-lg md:text-xl font-black text-white mt-0.5 tracking-tight">
                     {video.title}
                   </h2>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleToggleAudioMode}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all duration-150 cursor-pointer pointer-events-auto ${
-                    audioMode === 'voice_focus'
-                      ? 'bg-amber-500 text-slate-950 border border-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.5)]'
-                      : 'bg-white/10 border border-white/15 text-zinc-300 hover:text-white backdrop-blur-md'
-                  }`}
-                >
-                  {audioMode === 'voice_focus' ? (
-                    <>
-                      <Volume2 className="w-4 h-4 text-slate-950" />
-                      <span>Fokus Suara: AKTIF [▲]</span>
-                    </>
-                  ) : (
-                    <>
-                      <Volume1 className="w-4 h-4 text-zinc-400" />
-                      <span>Audio: STANDAR [▲]</span>
-                    </>
-                  )}
-                </button>
-
-                <div className="flex items-center gap-2.5 bg-white/10 border border-white/15 px-4 py-2 rounded-xl text-xs font-bold text-zinc-200 backdrop-blur-md shadow-sm">
-                  <Shield className="w-4 h-4 text-amber-400" />
-                  <span>
-                    {isPlaying ? 'Sedang Diputar' : 'Dijeda'} • {currentSrc === video.hd ? 'HD 1080p' : 'SD 720p'}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2 bg-white/10 border border-white/15 px-3 py-1.5 rounded-xl text-xs font-bold text-zinc-200">
+                <Shield className="w-3.5 h-3.5 text-brand" />
+                <span>
+                  {isPlaying ? 'Sedang Diputar' : 'Dijeda'} • {currentSrc === video.hd ? 'HD 1080p' : 'SD 720p'}
+                </span>
               </div>
             </div>
 
             {/* Bottom Playback Bar */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Progress Bar */}
-              <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden backdrop-blur-xs">
+              <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-amber-500 rounded-full transition-all duration-150 shadow-[0_0_12px_rgba(245,158,11,0.9)]"
+                  className="h-full bg-brand rounded-full transition-all duration-150"
                   style={{
                     width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
                   }}
@@ -505,24 +467,15 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
               </div>
 
               <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
-                <span className="font-mono text-sm text-zinc-200">
+                <span className="font-mono text-xs text-zinc-300">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
 
-                {/* Remote Guide Help with stylish kbd badges */}
-                <div className="flex items-center gap-5 text-xs text-zinc-300 font-semibold">
-                  <span>
-                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-zinc-200 font-mono text-[11px]">OK</kbd> Putar / Jeda
-                  </span>
-                  <span>
-                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-zinc-200 font-mono text-[11px]">◀ / ▶</kbd> Lompat 10s
-                  </span>
-                  <span>
-                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-zinc-200 font-mono text-[11px]">▲</kbd> Fokus Suara
-                  </span>
-                  <span>
-                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-zinc-200 font-mono text-[11px]">KEMBALI</kbd> Keluar
-                  </span>
+                {/* Remote Guide Help */}
+                <div className="flex items-center gap-4 text-xs text-zinc-400 font-semibold">
+                  <span>OK: Putar / Jeda</span>
+                  <span>◀ / ▶: Lompat 10s</span>
+                  <span>KEMBALI: Keluar</span>
                 </div>
               </div>
             </div>

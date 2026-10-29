@@ -46,10 +46,10 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
       const focused = currentId === id;
       setIsFocused(focused);
       if (focused && ref.current) {
-        const isNav = id.startsWith('nav-');
+        const isTopSection = id.startsWith('nav-') || id === 'hero-play-btn';
         ref.current.scrollIntoView({
           behavior: 'auto',
-          block: isNav ? 'start' : 'center',
+          block: isTopSection ? 'start' : 'center',
           inline: 'nearest',
         });
       }

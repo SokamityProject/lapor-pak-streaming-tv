@@ -12,7 +12,7 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
   const historyFocus = useTvFocus({ id: 'nav-history', onSelect: () => onSelectTab('history') });
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between py-2 mb-4 bg-[#080B11]/95 border-b border-white/10">
+    <header className="flex items-center justify-between py-2.5 mb-6 bg-[#080B11] border-b border-white/10">
       {/* Brand Logo & Name */}
       <div className="flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-lg bg-brand text-slate-950 font-black text-xs flex items-center justify-center shadow">
@@ -28,9 +28,9 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
         <div
           ref={homeFocus.ref}
           onClick={() => onSelectTab('home')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-100 cursor-pointer ${
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-100 cursor-pointer ${
             homeFocus.isFocused
-              ? 'bg-brand text-slate-950 shadow-tv-focus scale-105 ring-2 ring-white/80'
+              ? 'bg-brand text-slate-950 ring-2 ring-white'
               : activeTab === 'home'
               ? 'bg-white/15 text-white border border-white/20'
               : 'text-zinc-400 hover:text-white'
@@ -42,9 +42,9 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
         <div
           ref={playlistFocus.ref}
           onClick={() => onSelectTab('playlist')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-100 cursor-pointer ${
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-100 cursor-pointer ${
             playlistFocus.isFocused
-              ? 'bg-brand text-slate-950 shadow-tv-focus scale-105 ring-2 ring-white/80'
+              ? 'bg-brand text-slate-950 ring-2 ring-white'
               : activeTab === 'playlist'
               ? 'bg-white/15 text-white border border-white/20'
               : 'text-zinc-400 hover:text-white'
@@ -56,9 +56,9 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
         <div
           ref={historyFocus.ref}
           onClick={() => onSelectTab('history')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-100 cursor-pointer ${
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-colors duration-100 cursor-pointer ${
             historyFocus.isFocused
-              ? 'bg-brand text-slate-950 shadow-tv-focus scale-105 ring-2 ring-white/80'
+              ? 'bg-brand text-slate-950 ring-2 ring-white'
               : activeTab === 'history'
               ? 'bg-white/15 text-white border border-white/20'
               : 'text-zinc-400 hover:text-white'

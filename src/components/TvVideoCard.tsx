@@ -16,7 +16,7 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
   isFocused: externalFocused,
   onSelect,
   id = `video-${video.id}`,
-  className = 'w-80 shrink-0',
+  className = 'w-64 shrink-0',
 }) => {
   const { ref, isFocused: hookFocused } = useTvFocus({
     id,
@@ -62,7 +62,7 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
       onClick={onSelect}
       className={`group relative flex flex-col bg-[#0F172A] rounded-xl overflow-hidden border-2 transition-transform duration-100 cursor-pointer ${className} ${
         focused
-          ? 'border-brand scale-108 shadow-tv-focus ring-2 ring-brand/60 z-20 bg-[#1E293B]'
+          ? 'border-brand scale-108 shadow-md z-20 bg-[#1E293B]'
           : 'border-white/10 opacity-90'
       }`}
     >
@@ -88,7 +88,7 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
         {/* Center Play Icon on Focus */}
         {focused && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <div className="w-10 h-10 rounded-full bg-brand text-slate-950 flex items-center justify-center shadow-lg">
+            <div className="w-9 h-9 rounded-full bg-brand text-slate-950 flex items-center justify-center shadow">
               <Play className="w-4 h-4 fill-current ml-0.5" />
             </div>
           </div>
@@ -130,13 +130,13 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
       </div>
 
       {/* 2. Title & Metadata */}
-      <div className="p-3 bg-[#0F172A] flex flex-col gap-1 border-t border-white/5">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-400">
+      <div className="p-2.5 bg-[#0F172A] flex flex-col gap-1 border-t border-white/5">
+        <div className="flex items-center gap-1 text-[10px] font-medium text-zinc-400">
           <Calendar className="w-3 h-3 text-brand shrink-0" />
           <span>{formattedDate}</span>
         </div>
         <h3
-          className={`font-bold text-sm line-clamp-1 leading-snug transition-colors ${
+          className={`font-bold text-xs sm:text-sm line-clamp-1 leading-snug transition-colors ${
             focused ? 'text-brand' : 'text-white'
           }`}
         >

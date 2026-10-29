@@ -175,12 +175,12 @@ class SpatialNavigationManager {
       if (direction === 'up') {
         if (currentRailIdx > 0) {
           const prevRailId = allRails[currentRailIdx - 1];
-          return this.findBestCardInRail(prevRailId, cardIdx);
-        } else if (currentRailIdx === 0) {
-          if (this.items.has('hero-play-btn')) return 'hero-play-btn';
-          return 'nav-home';
+          const target = this.findBestCardInRail(prevRailId, cardIdx);
+          if (target) return target;
         }
-        return null;
+        // At top rail, going UP always goes to Hero Spotlight, or Nav Topbar
+        if (this.items.has('hero-play-btn')) return 'hero-play-btn';
+        return 'nav-home';
       }
     }
 
@@ -237,13 +237,26 @@ class SpatialNavigationManager {
   }
 
   private getOrderedRailIds(): string[] {
-    const rails: string[] = [];
+    const railSet = new Set<string>();
     for (const key of this.items.keys()) {
       const match = key.match(/^rail-(.+)-card-\d+$/);
-      if (match && !rails.includes(match[1])) {
-        rails.push(match[1]);
+      if (match) {
+        railSet.add(match[1]);
       }
     }
+    const rails = Array.from(railSet);
+    rails.sort((a, b) => {
+      // 'continue' is strictly the first rail
+      if (a === 'continue') return -1;
+      if (b === 'continue') return 1;
+      // Sort months numerically: month-0, month-1, month-2...
+      const aNum = a.match(/^month-(\d+)$/);
+      const bNum = b.match(/^month-(\d+)$/);
+      if (aNum && bNum) {
+        return parseInt(aNum[1], 10) - parseInt(bNum[1], 10);
+      }
+      return a.localeCompare(b);
+    });
     return rails;
   }
 
