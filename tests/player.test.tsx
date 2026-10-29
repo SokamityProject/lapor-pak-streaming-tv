@@ -63,4 +63,20 @@ describe('TV Player Remote Controls & Overlay Behavior', () => {
     handlePlayerRemoteKey({ key: 'Unidentified', keyCode: 4 } as any, callbacks);
     expect(callbacks.onBack).toHaveBeenCalledTimes(5);
   });
+
+  it('triggers onToggleAudioMode on A, a, and AudioTrack keys', () => {
+    const callbacks = {
+      ...createCallbacks(),
+      onToggleAudioMode: vi.fn(),
+    };
+
+    handlePlayerRemoteKey({ key: 'a' }, callbacks);
+    expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(1);
+
+    handlePlayerRemoteKey({ key: 'A' }, callbacks);
+    expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(2);
+
+    handlePlayerRemoteKey({ key: 'AudioTrack' }, callbacks);
+    expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(3);
+  });
 });

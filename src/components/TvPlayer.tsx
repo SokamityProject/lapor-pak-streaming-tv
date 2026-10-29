@@ -1,15 +1,17 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { WatchVideoDetails } from '../types/api';
 import { saveProgress, fetchWatchDetails } from '../services/api';
-import { Play, Pause, RotateCcw, RotateCw, ArrowLeft, Shield, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Play, Pause, RotateCcw, RotateCw, ArrowLeft, Shield, RefreshCw, AlertTriangle, Volume2, Volume1 } from 'lucide-react';
 import { useTvFocus } from '../hooks/useTvFocus';
 import { SpatialNavigation } from '../services/navigation';
+import { AudioMode, getAudioMode, toggleAudioMode, initAudioMode } from '../services/audioMode';
 
 export interface PlayerCallbacks {
   onCenterClick: () => void;
   onTogglePlay: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
+  onToggleAudioMode?: () => void;
 }
 
 export function handlePlayerRemoteKey(
@@ -18,6 +20,20 @@ export function handlePlayerRemoteKey(
 ): boolean {
   const key = event.key;
   const keyCode = event.keyCode;
+
+  // Toggle Audio Mode (Voice Focus) via 'a', 'A', or AudioTrack remote key
+  if (
+    key === 'a' ||
+    key === 'A' ||
+    key === 'AudioTrack' ||
+    keyCode === 65 ||
+    keyCode === 170
+  ) {
+    if (callbacks.onToggleAudioMode) {
+      callbacks.onToggleAudioMode();
+      return true;
+    }
+  }
 
   // D-pad Center / OK button
   if (
@@ -98,6 +114,7 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   const [hudMessage, setHudMessage] = useState<string | null>(null);
   const [hasPlaybackError, setHasPlaybackError] = useState(false);
   const [isRefreshingLink, setIsRefreshingLink] = useState(false);
+  const [audioMode, setAudioModeState] = useState<AudioMode>(getAudioMode());
 
   const osdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hudTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -105,6 +122,10 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   const pendingSeekRef = useRef<number | null>(video.resume_time > 0 ? video.resume_time : null);
   const showOsdRef = useRef(showOsd);
   showOsdRef.current = showOsd;
+
+  useEffect(() => {
+    initAudioMode();
+  }, []);
 
   const resetOsdTimer = useCallback(() => {
     setShowOsd(true);
@@ -121,6 +142,13 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
       setHudMessage(null);
     }, 1500);
   }, []);
+
+  const handleToggleAudioMode = useCallback(() => {
+    const next = toggleAudioMode();
+    setAudioModeState(next);
+    showHud(next === 'voice_focus' ? 'FOKUS SUARA: AKTIF 🗣️' : 'AUDIO: STANDAR 🔊');
+    resetOsdTimer();
+  }, [showHud, resetOsdTimer]);
 
   const togglePlay = useCallback(() => {
     if (videoRef.current) {
@@ -251,6 +279,7 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
         onTogglePlay: togglePlay,
         onSeek: seek,
         onBack: handleBack,
+        onToggleAudioMode: handleToggleAudioMode,
       });
       if (handled) {
         e.preventDefault();
@@ -425,11 +454,34 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300">
-                <Shield className="w-4 h-4 text-brand" />
-                <span>
-                  {isPlaying ? 'Sedang Diputar' : 'Dijeda'} • {currentSrc === video.hd ? 'HD 1080p' : 'SD 720p'}
-                </span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleToggleAudioMode}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer pointer-events-auto ${
+                    audioMode === 'voice_focus'
+                      ? 'bg-amber-500/20 text-brand border border-brand/60 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                      : 'bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {audioMode === 'voice_focus' ? (
+                    <>
+                      <Volume2 className="w-4 h-4 text-brand" />
+                      <span>Fokus Suara: AKTIF [A]</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume1 className="w-4 h-4 text-slate-400" />
+                      <span>Audio: STANDAR [A]</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center gap-3 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300">
+                  <Shield className="w-4 h-4 text-brand" />
+                  <span>
+                    {isPlaying ? 'Sedang Diputar' : 'Dijeda'} • {currentSrc === video.hd ? 'HD 1080p' : 'SD 720p'}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -454,6 +506,7 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
                 <div className="flex items-center gap-5 text-xs text-slate-400 font-semibold">
                   <span>OK: Putar / Jeda</span>
                   <span>◀ / ▶: Lompat 10s</span>
+                  <span>A: Fokus Suara</span>
                   <span>KEMBALI: Keluar</span>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 package com.laporpak.tv;
 
+import android.media.audiofx.Equalizer;
 import android.net.http.SslError;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -21,11 +22,72 @@ import javax.net.ssl.X509TrustManager;
 
 public class MainActivity extends BridgeActivity {
     private static final String TV_USER_AGENT = "Mozilla/5.0 (Linux; Android 12; Android TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    private Equalizer equalizer = null;
+    private boolean voiceFocusActive = false;
 
     public class TvAppBridge {
         @JavascriptInterface
         public void exitApp() {
             runOnUiThread(() -> finish());
+        }
+
+        @JavascriptInterface
+        public void setVoiceFocus(boolean enabled) {
+            runOnUiThread(() -> applyVoiceFocusNative(enabled));
+        }
+
+        @JavascriptInterface
+        public boolean isVoiceFocusActive() {
+            return voiceFocusActive;
+        }
+    }
+
+    private void applyVoiceFocusNative(boolean enabled) {
+        voiceFocusActive = enabled;
+        try {
+            if (equalizer == null) {
+                // Audio session 0 attaches DSP to global audio output of this application
+                equalizer = new Equalizer(1000, 0);
+            }
+
+            if (!enabled) {
+                equalizer.setEnabled(false);
+                return;
+            }
+
+            equalizer.setEnabled(true);
+            short numBands = equalizer.getNumberOfBands();
+            short[] bandRange = equalizer.getBandLevelRange();
+            short minLevel = bandRange != null && bandRange.length > 0 ? bandRange[0] : -1000;
+            short maxLevel = bandRange != null && bandRange.length > 1 ? bandRange[1] : 1000;
+
+            // Target vocal profile:
+            // 1. Cut bass (< 250 Hz) by -400 mB (-4 dB) to eliminate BGM rumbling
+            // 2. Boost vocal presence (800 Hz to 4.5 kHz) by +500 mB (+5 dB) to bring voice forward
+            for (short i = 0; i < numBands; i++) {
+                int centerFreqMilliHz = equalizer.getCenterFreq(i);
+                if (centerFreqMilliHz < 250000) {
+                    equalizer.setBandLevel(i, (short) Math.max(minLevel, -400));
+                } else if (centerFreqMilliHz >= 800000 && centerFreqMilliHz <= 4500000) {
+                    equalizer.setBandLevel(i, (short) Math.min(maxLevel, 500));
+                } else {
+                    equalizer.setBandLevel(i, (short) 0);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (equalizer != null) {
+            try {
+                equalizer.setEnabled(false);
+                equalizer.release();
+            } catch (Exception ignored) {}
+            equalizer = null;
         }
     }
 
