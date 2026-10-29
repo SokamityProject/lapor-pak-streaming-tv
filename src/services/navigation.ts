@@ -19,6 +19,7 @@ class SpatialNavigationManager {
   private items = new Map<string, FocusItem>();
   private currentFocusId: string | null = null;
   private activeScopeId: string | null = null;
+  private activeSidebarId: string = 'nav-home';
   private listeners = new Set<(id: string | null) => void>();
   private isListening = false;
   private lastKeyTime = 0;
@@ -60,9 +61,27 @@ class SpatialNavigationManager {
     return this.activeScopeId;
   }
 
+  public setActiveSidebarItem(id: string): void {
+    this.activeSidebarId = id;
+  }
+
+  public getActiveSidebarItem(): string {
+    if (this.activeSidebarId && this.items.has(this.activeSidebarId)) {
+      return this.activeSidebarId;
+    }
+    const sidebarOrder = ['nav-home', 'nav-playlist', 'nav-history', 'nav-exit'];
+    for (const id of sidebarOrder) {
+      if (this.items.has(id)) return id;
+    }
+    return 'nav-home';
+  }
+
   public setFocus(id: string | null): void {
     if (this.currentFocusId !== id) {
       this.currentFocusId = id;
+      if (id && ['nav-home', 'nav-playlist', 'nav-history'].includes(id)) {
+        this.activeSidebarId = id;
+      }
       this.listeners.forEach((listener) => listener(this.currentFocusId));
     }
   }
@@ -75,6 +94,7 @@ class SpatialNavigationManager {
     this.items.clear();
     this.currentFocusId = null;
     this.activeScopeId = null;
+    this.activeSidebarId = 'nav-home';
     this.listeners.clear();
   }
 
@@ -113,34 +133,48 @@ class SpatialNavigationManager {
       return null;
     }
 
-    // 1. Topbar Navigation Tabs
+    // 1. Sidebar Navigation (Left Vertical Bar)
+    // Order: nav-home -> nav-playlist -> nav-history -> nav-exit
     if (currentId.startsWith('nav-')) {
-      const tabs = ['nav-home', 'nav-playlist', 'nav-history'].filter(id => this.items.has(id));
-      const idx = tabs.indexOf(currentId);
+      const sidebarItems = ['nav-home', 'nav-playlist', 'nav-history', 'nav-exit'].filter(id => this.items.has(id));
+      const idx = sidebarItems.indexOf(currentId);
       if (idx !== -1) {
-        if (direction === 'left' && idx > 0) return tabs[idx - 1];
-        if (direction === 'right' && idx < tabs.length - 1) return tabs[idx + 1];
         if (direction === 'down') {
-          if (currentId === 'nav-home') {
-            if (this.items.has('hero-play-btn')) return 'hero-play-btn';
-            const firstCard = this.findFirstAvailableCard();
-            if (firstCard) return firstCard;
-          } else if (currentId === 'nav-playlist') {
-            if (this.items.has('playlist-card-0')) return 'playlist-card-0';
-          } else if (currentId === 'nav-history') {
-            if (this.items.has('history-card-0')) return 'history-card-0';
+          if (idx < sidebarItems.length - 1) {
+            return sidebarItems[idx + 1];
           }
+          return currentId;
         }
-        if (direction === 'up') return null;
+        if (direction === 'up') {
+          if (idx > 0) {
+            return sidebarItems[idx - 1];
+          }
+          return currentId;
+        }
+        if (direction === 'left') {
+          return currentId;
+        }
+        if (direction === 'right') {
+          const target = this.getSidebarRightTarget(currentId);
+          if (target && this.items.has(target)) {
+            return target;
+          }
+          return null;
+        }
       }
     }
 
     // 2. Hero Spotlight Play Button
     if (currentId === 'hero-play-btn') {
-      if (direction === 'up') return 'nav-home';
+      if (direction === 'left') {
+        return this.getActiveSidebarItem();
+      }
       if (direction === 'down') {
         const firstCard = this.findFirstAvailableCard();
         if (firstCard) return firstCard;
+      }
+      if (direction === 'up' || direction === 'right') {
+        return currentId;
       }
       return null;
     }
@@ -156,6 +190,9 @@ class SpatialNavigationManager {
       if (direction === 'left') {
         if (cardIdx > 0 && this.items.has(`rail-${railId}-card-${cardIdx - 1}`)) {
           return `rail-${railId}-card-${cardIdx - 1}`;
+        }
+        if (cardIdx === 0) {
+          return this.getActiveSidebarItem();
         }
         return null;
       }
@@ -178,9 +215,9 @@ class SpatialNavigationManager {
           const target = this.findBestCardInRail(prevRailId, cardIdx);
           if (target) return target;
         }
-        // At top rail, going UP always goes to Hero Spotlight, or Nav Topbar
+        // At top rail, going UP always goes to Hero Spotlight Play Button if present, else active sidebar
         if (this.items.has('hero-play-btn')) return 'hero-play-btn';
-        return 'nav-home';
+        return this.getActiveSidebarItem();
       }
     }
 
@@ -189,8 +226,15 @@ class SpatialNavigationManager {
     if (playlistMatch) {
       const idx = parseInt(playlistMatch[1], 10);
       const cols = 4;
-      if (direction === 'left' && idx % cols !== 0 && this.items.has(`playlist-card-${idx - 1}`)) {
-        return `playlist-card-${idx - 1}`;
+      if (direction === 'left') {
+        if (idx % cols !== 0 && this.items.has(`playlist-card-${idx - 1}`)) {
+          return `playlist-card-${idx - 1}`;
+        }
+        if (idx % cols === 0) {
+          if (this.items.has('nav-playlist')) return 'nav-playlist';
+          return this.getActiveSidebarItem();
+        }
+        return null;
       }
       if (direction === 'right' && (idx + 1) % cols !== 0 && this.items.has(`playlist-card-${idx + 1}`)) {
         return `playlist-card-${idx + 1}`;
@@ -202,7 +246,7 @@ class SpatialNavigationManager {
         if (idx >= cols && this.items.has(`playlist-card-${idx - cols}`)) {
           return `playlist-card-${idx - cols}`;
         }
-        return 'nav-playlist';
+        return currentId;
       }
     }
 
@@ -211,8 +255,15 @@ class SpatialNavigationManager {
     if (historyMatch) {
       const idx = parseInt(historyMatch[1], 10);
       const cols = 4;
-      if (direction === 'left' && idx % cols !== 0 && this.items.has(`history-card-${idx - 1}`)) {
-        return `history-card-${idx - 1}`;
+      if (direction === 'left') {
+        if (idx % cols !== 0 && this.items.has(`history-card-${idx - 1}`)) {
+          return `history-card-${idx - 1}`;
+        }
+        if (idx % cols === 0) {
+          if (this.items.has('nav-history')) return 'nav-history';
+          return this.getActiveSidebarItem();
+        }
+        return null;
       }
       if (direction === 'right' && (idx + 1) % cols !== 0 && this.items.has(`history-card-${idx + 1}`)) {
         return `history-card-${idx + 1}`;
@@ -224,15 +275,39 @@ class SpatialNavigationManager {
         if (idx >= cols && this.items.has(`history-card-${idx - cols}`)) {
           return `history-card-${idx - cols}`;
         }
-        return 'nav-history';
+        return currentId;
       }
     }
 
     // 6. Retry Button
     if (currentId === 'btn-retry') {
-      if (direction === 'up') return 'nav-home';
+      if (direction === 'left') {
+        return this.getActiveSidebarItem();
+      }
+      if (direction === 'up') {
+        return currentId;
+      }
     }
 
+    return null;
+  }
+
+  private getSidebarRightTarget(currentId: string): string | null {
+    if (currentId === 'nav-playlist' && this.items.has('playlist-card-0')) {
+      return 'playlist-card-0';
+    }
+    if (currentId === 'nav-history' && this.items.has('history-card-0')) {
+      return 'history-card-0';
+    }
+    if (this.items.has('hero-play-btn')) {
+      return 'hero-play-btn';
+    }
+    const firstCard = this.findFirstAvailableCard();
+    if (firstCard) {
+      return firstCard;
+    }
+    if (this.items.has('playlist-card-0')) return 'playlist-card-0';
+    if (this.items.has('history-card-0')) return 'history-card-0';
     return null;
   }
 
@@ -255,6 +330,11 @@ class SpatialNavigationManager {
       if (aNum && bNum) {
         return parseInt(aNum[1], 10) - parseInt(bNum[1], 10);
       }
+      const aIsNum = /^\d+$/.test(a);
+      const bIsNum = /^\d+$/.test(b);
+      if (aIsNum && bIsNum) {
+        return parseInt(a, 10) - parseInt(b, 10);
+      }
       return a.localeCompare(b);
     });
     return rails;
@@ -275,6 +355,11 @@ class SpatialNavigationManager {
 
   private findFirstAvailableCard(): string | null {
     if (this.items.has('rail-continue-card-0')) return 'rail-continue-card-0';
+    const orderedRails = this.getOrderedRailIds();
+    for (const railId of orderedRails) {
+      const key = `rail-${railId}-card-0`;
+      if (this.items.has(key)) return key;
+    }
     for (const key of this.items.keys()) {
       if (key.startsWith('rail-') && key.endsWith('-card-0')) {
         return key;
