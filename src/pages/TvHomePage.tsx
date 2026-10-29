@@ -118,6 +118,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
 
   const handleCancelExit = useCallback(() => {
     setShowExitModal(false);
+    SpatialNavigation.setScope(null);
     const restoreFocus = previousFocusRef.current || `nav-${activeTab}`;
     SpatialNavigation.setFocus(restoreFocus);
   }, [activeTab]);
@@ -192,7 +193,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
       />
 
       {/* Right Pane: Content Feed */}
-      <div className="flex-1 h-full overflow-y-auto pl-10 pr-8 md:pl-12 md:pr-12 py-6 scrollbar-none ml-20">
+      <div className="flex-1 h-full overflow-y-auto overflow-x-hidden pl-10 pr-8 md:pl-12 md:pr-12 py-6 scrollbar-none ml-20">
         {isInitialLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
             <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center">
@@ -307,11 +308,13 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
       </div>
 
       {/* Exit Confirmation Modal */}
-      <TvExitModal
-        isOpen={showExitModal}
-        onConfirm={handleConfirmExit}
-        onCancel={handleCancelExit}
-      />
+      {showExitModal && (
+        <TvExitModal
+          isOpen={showExitModal}
+          onConfirm={handleConfirmExit}
+          onCancel={handleCancelExit}
+        />
+      )}
     </div>
   );
 };

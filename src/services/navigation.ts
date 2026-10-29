@@ -462,8 +462,16 @@ class SpatialNavigationManager {
   public triggerSelect(): void {
     if (this.currentFocusId) {
       const item = this.items.get(this.currentFocusId);
+      let executed = false;
       if (item && item.onSelect) {
         item.onSelect();
+        executed = true;
+      }
+      if (!executed) {
+        const el = item?.element || (typeof document !== 'undefined' ? document.getElementById(this.currentFocusId) : null);
+        if (el && typeof el.click === 'function') {
+          el.click();
+        }
       }
     }
   }
@@ -485,16 +493,27 @@ class SpatialNavigationManager {
       let handled = false;
       const key = e.key;
       const code = (e as any).keyCode;
+      const which = (e as any).which;
 
-      if (key === 'ArrowUp' || key === 'Up' || code === 19) {
+      if (key === 'ArrowUp' || key === 'Up' || code === 19 || which === 19) {
         handled = this.move('up');
-      } else if (key === 'ArrowDown' || key === 'Down' || code === 20) {
+      } else if (key === 'ArrowDown' || key === 'Down' || code === 20 || which === 20) {
         handled = this.move('down');
-      } else if (key === 'ArrowLeft' || key === 'Left' || code === 21) {
+      } else if (key === 'ArrowLeft' || key === 'Left' || code === 21 || which === 21) {
         handled = this.move('left');
-      } else if (key === 'ArrowRight' || key === 'Right' || code === 22) {
+      } else if (key === 'ArrowRight' || key === 'Right' || code === 22 || which === 22) {
         handled = this.move('right');
-      } else if (key === 'Enter' || key === 'Select' || key === ' ' || code === 13 || code === 23) {
+      } else if (
+        key === 'Enter' ||
+        key === 'Select' ||
+        key === ' ' ||
+        code === 13 ||
+        code === 23 ||
+        code === 66 ||
+        which === 13 ||
+        which === 23 ||
+        which === 66
+      ) {
         this.triggerSelect();
         handled = true;
       }

@@ -227,7 +227,7 @@ describe('TV UI Components', () => {
     const scrollContainer = container.querySelector('.overflow-x-hidden');
     expect(scrollContainer).toBeDefined();
     expect(scrollContainer?.className).toContain('py-6');
-    expect(scrollContainer?.className).toContain('px-6');
+    expect(scrollContainer?.className).toContain('px-8');
 
     // Click card
     fireEvent.click(screen.getByText('Eps. 10 - Kasus Pertama'));
@@ -353,6 +353,48 @@ describe('TV UI Components', () => {
     });
   });
 
+  it('resets horizontal rail scrollLeft to 0 when returning to card-0 to prevent leftmost clipping', () => {
+    SpatialNavigation.reset();
+    const mockVideos = [
+      { id: 101, title: 'Episode 101', slug: 'ep-101', thumbnail: '', duration: '45:00', episode: '101' },
+      { id: 102, title: 'Episode 102', slug: 'ep-102', thumbnail: '', duration: '45:00', episode: '102' },
+      { id: 103, title: 'Episode 103', slug: 'ep-103', thumbnail: '', duration: '45:00', episode: '103' },
+    ];
+
+    const { unmount } = render(
+      <TvRowRail
+        railId="rail-test"
+        title="Test Rail"
+        videos={mockVideos as any}
+        onSelectVideo={() => {}}
+      />
+    );
+
+    const card0 = document.getElementById('rail-test-card-0');
+    expect(card0).toBeDefined();
+    const container = card0?.parentElement as HTMLElement;
+    expect(container).toBeDefined();
+
+    // First focus on card-1 (user navigated right)
+    act(() => {
+      SpatialNavigation.setFocus('rail-test-card-1');
+    });
+
+    // Simulate carousel scrolled right (e.g. scrollLeft = 120px)
+    container.scrollLeft = 120;
+    expect(container.scrollLeft).toBe(120);
+
+    // Now return focus to card-0 (user navigated all the way back to the leftmost card)
+    act(() => {
+      SpatialNavigation.setFocus('rail-test-card-0');
+    });
+
+    // Container scrollLeft must be reset to 0 so the first card is never clipped!
+    expect(container.scrollLeft).toBe(0);
+
+    unmount();
+  });
+
   it('renders TvExitModal with high-contrast OLED styling, Batal, and Keluar buttons', () => {
     SpatialNavigation.reset();
     const handleConfirm = vi.fn();
@@ -439,6 +481,40 @@ describe('TV UI Components', () => {
       SpatialNavigation.move('up');
     });
     expect(SpatialNavigation.getCurrentFocus()).toBe('exit-cancel-btn');
+
+    unmount();
+  });
+
+  it('registers buttons and handles selection when TvExitModal transitions from isOpen=false to isOpen=true', () => {
+    SpatialNavigation.reset();
+    const handleCancel = vi.fn();
+    const handleConfirm = vi.fn();
+
+    const { rerender, unmount } = render(
+      <TvExitModal isOpen={false} onConfirm={handleConfirm} onCancel={handleCancel} />
+    );
+
+    // Modal was closed initially
+    expect(SpatialNavigation.getScope()).toBeNull();
+
+    // Now open modal
+    act(() => {
+      rerender(<TvExitModal isOpen={true} onConfirm={handleConfirm} onCancel={handleCancel} />);
+    });
+
+    // Must be scoped to exit-modal and focused on exit-cancel-btn
+    expect(SpatialNavigation.getScope()).toBe('exit-modal');
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-cancel-btn');
+
+    // Trigger select on exit-cancel-btn must call handleCancel
+    SpatialNavigation.triggerSelect();
+    expect(handleCancel).toHaveBeenCalledTimes(1);
+
+    // Move to confirm and trigger select
+    SpatialNavigation.move('right');
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-confirm-btn');
+    SpatialNavigation.triggerSelect();
+    expect(handleConfirm).toHaveBeenCalledTimes(1);
 
     unmount();
   });

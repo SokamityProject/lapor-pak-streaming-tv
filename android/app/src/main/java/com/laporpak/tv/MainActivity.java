@@ -31,6 +31,7 @@ public class MainActivity extends BridgeActivity {
             runOnUiThread(() -> {
                 try {
                     finishAffinity();
+                    System.exit(0);
                 } catch (Exception e) {
                     finish();
                 }
