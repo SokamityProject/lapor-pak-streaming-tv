@@ -42,7 +42,6 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
   const progress = video.progress || 0;
   const isCompleted = video.is_completed || progress >= 99;
 
-  // Format YYYY-MM-DD into localized Indonesian date (e.g. "25 Mar 2024")
   const formatEpisodeDate = (ep: string) => {
     if (!ep) return 'Episode Baru';
     const match = ep.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -61,95 +60,84 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
     <div
       ref={ref}
       onClick={onSelect}
-      className={`group relative flex flex-col bg-[#0C111A] rounded-2xl overflow-hidden border-2 transition-all duration-200 cursor-pointer ${className} ${
+      className={`group relative flex flex-col bg-[#0F172A] rounded-xl overflow-hidden border-2 transition-transform duration-100 cursor-pointer ${className} ${
         focused
-          ? 'border-brand scale-108 shadow-tv-card-focus ring-4 ring-brand/40 z-20 bg-[#111724]'
-          : 'border-white/10 opacity-95 hover:opacity-100 hover:border-white/20 shadow-tv-card'
+          ? 'border-brand scale-108 shadow-tv-focus ring-2 ring-brand/60 z-20 bg-[#1E293B]'
+          : 'border-white/10 opacity-90'
       }`}
     >
-      {/* 1. Thumbnail Container matching Web VideoCard */}
+      {/* 1. Thumbnail Container */}
       <div className="relative aspect-video w-full bg-[#080B11] overflow-hidden flex items-center justify-center">
         {imgSrc && !hasError ? (
           <img
             src={imgSrc}
             alt={video.title}
             onError={handleImgError}
-            className={`w-full h-full object-cover transition-transform duration-300 ${
-              focused ? 'scale-105' : 'scale-100'
-            }`}
+            className="w-full h-full object-cover"
             loading="lazy"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center gap-2 p-4 text-zinc-500">
-            <Tv className="w-10 h-10 text-amber-500/60" />
+          <div className="flex flex-col items-center justify-center gap-1.5 p-4 text-zinc-500">
+            <Tv className="w-8 h-8 text-brand/60" />
             <span className="text-xs font-bold text-zinc-400 text-center line-clamp-1">
               Lapor Pak!
             </span>
           </div>
         )}
 
-        {/* Ambient Dark Scrim on Focus */}
-        <div
-          className={`absolute inset-0 bg-black/35 transition-colors duration-200 ${
-            focused ? 'bg-black/55' : 'bg-black/25'
-          }`}
-        />
-
-        {/* Center Play Icon reveal on TV Focus */}
-        <div
-          className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${
-            focused ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
-          }`}
-        >
-          <div className="w-11 h-11 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shadow-xl">
-            <Play className="w-5 h-5 fill-current ml-0.5 stroke-[2]" />
+        {/* Center Play Icon on Focus */}
+        {focused && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <div className="w-10 h-10 rounded-full bg-brand text-slate-950 flex items-center justify-center shadow-lg">
+              <Play className="w-4 h-4 fill-current ml-0.5" />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Top-Left: Episode Badge */}
-        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[10px] font-black text-amber-400 border border-white/10 shadow-sm">
+        <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-black text-brand border border-white/10 shadow">
           EPS. {video.episode}
         </div>
 
-        {/* Top-Right: Status Badge (Selesai / Progress %) */}
+        {/* Top-Right: Status Badge */}
         {isCompleted ? (
-          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/90 text-emerald-400 text-[10px] font-bold border border-emerald-500/50 backdrop-blur-md shadow-sm">
+          <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/90 text-emerald-400 text-[10px] font-bold border border-emerald-500/50 shadow">
             <Check className="w-3 h-3 stroke-[3]" />
             <span>Selesai</span>
           </div>
         ) : progress > 0 ? (
-          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 text-[10px] font-extrabold shadow-sm">
+          <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-brand text-slate-950 text-[10px] font-extrabold shadow">
             {progress}%
           </div>
         ) : null}
 
         {/* Bottom-Right: Duration pill */}
         {video.duration && (
-          <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/85 backdrop-blur-md text-[10px] font-semibold text-zinc-200 border border-white/10 shadow-sm">
+          <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/85 text-[10px] font-semibold text-zinc-200 border border-white/10 shadow">
             {video.duration}
           </div>
         )}
 
         {/* Bottom edge progress bar */}
         {progress > 0 && !isCompleted && (
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/70">
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/70">
             <div
-              className="h-full bg-amber-500 transition-all duration-300 shadow-[0_0_8px_rgba(245,158,11,0.9)]"
+              className="h-full bg-brand transition-all duration-150"
               style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
             />
           </div>
         )}
       </div>
 
-      {/* 2. Title & Metadata matching Web VideoCard */}
-      <div className="p-3.5 bg-[#0C111A] flex flex-col gap-1.5 border-t border-white/[0.06]">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400">
-          <Calendar className="w-3.5 h-3.5 text-amber-500/80 shrink-0" />
+      {/* 2. Title & Metadata */}
+      <div className="p-3 bg-[#0F172A] flex flex-col gap-1 border-t border-white/5">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-400">
+          <Calendar className="w-3 h-3 text-brand shrink-0" />
           <span>{formattedDate}</span>
         </div>
         <h3
-          className={`font-bold text-sm md:text-base line-clamp-1 leading-snug transition-colors ${
-            focused ? 'text-amber-400' : 'text-white'
+          className={`font-bold text-sm line-clamp-1 leading-snug transition-colors ${
+            focused ? 'text-brand' : 'text-white'
           }`}
         >
           {video.title}

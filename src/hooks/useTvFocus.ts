@@ -48,7 +48,7 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
       if (focused && ref.current) {
         const isNav = id.startsWith('nav-');
         ref.current.scrollIntoView({
-          behavior: 'smooth',
+          behavior: 'auto',
           block: isNav ? 'start' : 'center',
           inline: 'nearest',
         });

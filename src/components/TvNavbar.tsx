@@ -12,10 +12,10 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
   const historyFocus = useTvFocus({ id: 'nav-history', onSelect: () => onSelectTab('history') });
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between py-2.5 mb-5 border-b border-white/[0.08] bg-[#080B11]/90 backdrop-blur-md">
-      {/* Brand Identity - Compact & Clean */}
+    <header className="sticky top-0 z-40 flex items-center justify-between py-2 mb-4 bg-[#080B11]/95 border-b border-white/10">
+      {/* Brand Logo & Name */}
       <div className="flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center shadow-md">
+        <div className="w-7 h-7 rounded-lg bg-brand text-slate-950 font-black text-xs flex items-center justify-center shadow">
           LP
         </div>
         <span className="text-sm md:text-base font-black tracking-tight text-white">
@@ -23,17 +23,17 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
         </span>
       </div>
 
-      {/* Navigation Pills - Compact & Intuitive */}
+      {/* Navigation Tabs */}
       <nav className="flex items-center gap-2">
         <div
           ref={homeFocus.ref}
           onClick={() => onSelectTab('home')}
-          className={`px-4 py-1.5 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-100 cursor-pointer ${
             homeFocus.isFocused
-              ? 'bg-amber-500 text-slate-950 font-black shadow-tv-focus scale-105 ring-2 ring-white/80'
+              ? 'bg-brand text-slate-950 shadow-tv-focus scale-105 ring-2 ring-white/80'
               : activeTab === 'home'
-              ? 'bg-white/10 text-white font-bold border border-white/15'
-              : 'text-zinc-400 hover:text-white font-medium'
+              ? 'bg-white/15 text-white border border-white/20'
+              : 'text-zinc-400 hover:text-white'
           }`}
         >
           Beranda
@@ -42,12 +42,12 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
         <div
           ref={playlistFocus.ref}
           onClick={() => onSelectTab('playlist')}
-          className={`px-4 py-1.5 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-100 cursor-pointer ${
             playlistFocus.isFocused
-              ? 'bg-amber-500 text-slate-950 font-black shadow-tv-focus scale-105 ring-2 ring-white/80'
+              ? 'bg-brand text-slate-950 shadow-tv-focus scale-105 ring-2 ring-white/80'
               : activeTab === 'playlist'
-              ? 'bg-white/10 text-white font-bold border border-white/15'
-              : 'text-zinc-400 hover:text-white font-medium'
+              ? 'bg-white/15 text-white border border-white/20'
+              : 'text-zinc-400 hover:text-white'
           }`}
         >
           Playlist
@@ -56,22 +56,22 @@ export const TvNavbar: React.FC<TvNavbarProps> = ({ activeTab, onSelectTab }) =>
         <div
           ref={historyFocus.ref}
           onClick={() => onSelectTab('history')}
-          className={`px-4 py-1.5 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all duration-100 cursor-pointer ${
             historyFocus.isFocused
-              ? 'bg-amber-500 text-slate-950 font-black shadow-tv-focus scale-105 ring-2 ring-white/80'
+              ? 'bg-brand text-slate-950 shadow-tv-focus scale-105 ring-2 ring-white/80'
               : activeTab === 'history'
-              ? 'bg-white/10 text-white font-bold border border-white/15'
-              : 'text-zinc-400 hover:text-white font-medium'
+              ? 'bg-white/15 text-white border border-white/20'
+              : 'text-zinc-400 hover:text-white'
           }`}
         >
           Riwayat
         </div>
       </nav>
 
-      {/* Subtle Right Status - Minimal visual weight */}
-      <div className="flex items-center gap-2 text-xs text-zinc-500">
+      {/* Minimal Status Dot */}
+      <div className="flex items-center gap-1.5 text-xs text-zinc-400">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-        <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">TRANS7</span>
+        <span className="text-[10px] font-bold tracking-wider uppercase text-zinc-400">TRANS7</span>
       </div>
     </header>
   );

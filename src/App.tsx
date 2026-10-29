@@ -34,21 +34,21 @@ const ExitModal: React.FC<ExitModalProps> = ({ onConfirm, onCancel }) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
-      <div className="bg-[#0C111A] border border-white/15 rounded-3xl p-8 max-w-md w-full shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] flex flex-col items-center text-center">
-        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4 text-amber-500 shadow-md">
-          <AlertTriangle className="w-7 h-7" />
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6">
+      <div className="bg-[#0F172A] border border-white/20 rounded-2xl p-7 max-w-sm w-full shadow-2xl flex flex-col items-center text-center">
+        <div className="w-12 h-12 rounded-xl bg-brand/10 border border-brand/30 flex items-center justify-center mb-3 text-brand">
+          <AlertTriangle className="w-6 h-6" />
         </div>
-        <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Keluar dari Aplikasi?</h3>
-        <p className="text-zinc-400 text-xs sm:text-sm mb-8 leading-relaxed max-w-xs">
-          Apakah Anda yakin ingin menutup Lapor Pak! Command Streaming Station TV?
+        <h3 className="text-xl font-black text-white mb-1.5 tracking-tight">Keluar dari Aplikasi?</h3>
+        <p className="text-zinc-400 text-xs mb-6 leading-relaxed max-w-xs">
+          Apakah Anda yakin ingin menutup Lapor Pak! Streaming TV?
         </p>
 
-        <div className="flex items-center gap-4 w-full justify-center">
+        <div className="flex items-center gap-3 w-full justify-center">
           <button
             ref={cancelFocus.ref}
             onClick={onCancel}
-            className={`px-7 py-3 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer ${
+            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-100 cursor-pointer ${
               cancelFocus.isFocused
                 ? 'bg-white/20 text-white shadow-tv-focus scale-105 ring-2 ring-white'
                 : 'bg-white/10 text-zinc-300 hover:bg-white/15 border border-white/10'
@@ -59,7 +59,7 @@ const ExitModal: React.FC<ExitModalProps> = ({ onConfirm, onCancel }) => {
           <button
             ref={confirmFocus.ref}
             onClick={onConfirm}
-            className={`flex items-center gap-2 px-7 py-3 rounded-xl font-black text-sm transition-all duration-150 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl font-black text-sm transition-all duration-100 cursor-pointer ${
               confirmFocus.isFocused
                 ? 'bg-red-600 text-white shadow-tv-focus scale-105 ring-2 ring-white'
                 : 'bg-red-700/80 text-white hover:bg-red-600'
@@ -99,7 +99,14 @@ export const App: React.FC = () => {
     } else if (showExitModal) {
       setShowExitModal(false);
     } else {
-      setShowExitModal(true);
+      // Intuitive TV Back: If focused on content, return to Topbar first!
+      const current = SpatialNavigation.getCurrentFocus();
+      if (current && !current.startsWith('nav-')) {
+        SpatialNavigation.setFocus('nav-home');
+      } else {
+        // If already on topbar, prompt exit confirmation
+        setShowExitModal(true);
+      }
     }
   }, [activeVideo, showExitModal, handleClosePlayer]);
 
@@ -147,7 +154,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden ambient-precinct-bg text-white">
+    <div className="w-screen h-screen overflow-hidden bg-[#080B11] text-white">
       {activeVideo ? (
         <TvPlayer video={activeVideo} onClose={handleClosePlayer} />
       ) : (
