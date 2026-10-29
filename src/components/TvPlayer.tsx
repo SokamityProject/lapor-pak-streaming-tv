@@ -21,11 +21,14 @@ export function handlePlayerRemoteKey(
   const key = event.key;
   const keyCode = event.keyCode;
 
-  // Toggle Audio Mode (Voice Focus) via 'a', 'A', or AudioTrack remote key
+  // Toggle Audio Mode (Voice Focus) via D-pad Up, ArrowUp, or 'A' key
   if (
+    key === 'ArrowUp' ||
+    key === 'Up' ||
     key === 'a' ||
     key === 'A' ||
     key === 'AudioTrack' ||
+    keyCode === 19 ||
     keyCode === 65 ||
     keyCode === 170
   ) {
@@ -466,12 +469,12 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
                   {audioMode === 'voice_focus' ? (
                     <>
                       <Volume2 className="w-4 h-4 text-brand" />
-                      <span>Fokus Suara: AKTIF [A]</span>
+                      <span>Fokus Suara: AKTIF [▲]</span>
                     </>
                   ) : (
                     <>
                       <Volume1 className="w-4 h-4 text-slate-400" />
-                      <span>Audio: STANDAR [A]</span>
+                      <span>Audio: STANDAR [▲]</span>
                     </>
                   )}
                 </button>
@@ -506,7 +509,7 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
                 <div className="flex items-center gap-5 text-xs text-slate-400 font-semibold">
                   <span>OK: Putar / Jeda</span>
                   <span>◀ / ▶: Lompat 10s</span>
-                  <span>A: Fokus Suara</span>
+                  <span>▲: Fokus Suara</span>
                   <span>KEMBALI: Keluar</span>
                 </div>
               </div>

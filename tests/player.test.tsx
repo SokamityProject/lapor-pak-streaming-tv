@@ -64,19 +64,27 @@ describe('TV Player Remote Controls & Overlay Behavior', () => {
     expect(callbacks.onBack).toHaveBeenCalledTimes(5);
   });
 
-  it('triggers onToggleAudioMode on A, a, and AudioTrack keys', () => {
+  it('triggers onToggleAudioMode on D-pad Up, ArrowUp, and A keys', () => {
     const callbacks = {
       ...createCallbacks(),
       onToggleAudioMode: vi.fn(),
     };
 
-    handlePlayerRemoteKey({ key: 'a' }, callbacks);
+    // D-pad Up button on TV Remote
+    handlePlayerRemoteKey({ key: 'ArrowUp' }, callbacks);
     expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(1);
 
-    handlePlayerRemoteKey({ key: 'A' }, callbacks);
+    handlePlayerRemoteKey({ key: 'Up' }, callbacks);
     expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(2);
 
-    handlePlayerRemoteKey({ key: 'AudioTrack' }, callbacks);
+    handlePlayerRemoteKey({ key: 'Unidentified', keyCode: 19 } as any, callbacks);
     expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(3);
+
+    // Fallback keys (A, AudioTrack)
+    handlePlayerRemoteKey({ key: 'a' }, callbacks);
+    expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(4);
+
+    handlePlayerRemoteKey({ key: 'AudioTrack' }, callbacks);
+    expect(callbacks.onToggleAudioMode).toHaveBeenCalledTimes(5);
   });
 });
