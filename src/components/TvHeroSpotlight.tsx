@@ -30,49 +30,49 @@ export const TvHeroSpotlight: React.FC<TvHeroSpotlightProps> = ({ video, onPlay 
   if (!video) return null;
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden mb-8 border border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-8 shadow-2xl">
+    <div className="relative w-full rounded-3xl overflow-hidden mb-12 border border-slate-800/80 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-10 md:p-12 shadow-2xl">
       {/* Background artwork */}
       {backdropSrc && !backdropError && (
-        <div className="absolute right-0 top-0 bottom-0 w-3/5 opacity-30 overflow-hidden pointer-events-none">
+        <div className="absolute right-0 top-0 bottom-0 w-3/5 opacity-40 overflow-hidden pointer-events-none">
           <img
             src={backdropSrc}
             alt=""
             onError={handleBackdropError}
-            className="w-full h-full object-cover mask-gradient"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent" />
         </div>
       )}
 
       <div className="max-w-2xl z-10 relative">
-        <div className="inline-flex items-center gap-2 bg-red-600/90 text-white font-extrabold text-[11px] px-2.5 py-1 rounded-md mb-3 tracking-wider">
+        <div className="inline-flex items-center gap-2 bg-red-600 text-white font-black text-xs px-3.5 py-1.5 rounded-lg mb-4 tracking-wider shadow-md">
           <span>EPISODE TERBARU</span>
-          <span className="bg-white/20 px-1 rounded text-[10px]">EPS. {video.episode}</span>
+          <span className="bg-white/20 px-1.5 py-0.5 rounded text-[11px]">EPS. {video.episode}</span>
         </div>
 
-        <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3 tracking-tight leading-snug">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 tracking-tight leading-tight">
           {video.title}
         </h2>
 
-        <p className="text-slate-400 text-xs md:text-sm line-clamp-3 mb-6 leading-relaxed max-w-xl">
+        <p className="text-slate-300 text-sm md:text-base line-clamp-3 mb-8 leading-relaxed max-w-xl">
           Saksikan aksi lucu Komandan Andre, Wendy Cagur, Andhika Pratama, Surya Insomnia, Hesti Purwadinata, dan Kiky Saputri dalam memecahkan kasus-kasus kriminal penuh tawa.
         </p>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           <button
             ref={playFocus.ref}
             onClick={() => onPlay(video.slug)}
-            className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer ${
+            className={`flex items-center gap-3 px-8 py-3.5 rounded-2xl font-black text-base transition-all duration-200 cursor-pointer ${
               playFocus.isFocused
-                ? 'bg-brand text-slate-950 scale-105 shadow-tv-focus ring-4 ring-white/50'
+                ? 'bg-brand text-slate-950 scale-108 shadow-[0_12px_36px_rgba(245,158,11,0.4)] ring-4 ring-brand/40'
                 : 'bg-brand text-slate-950 hover:bg-amber-400'
             }`}
           >
-            <Play className="w-4 h-4 fill-current stroke-[2.5]" />
+            <Play className="w-5 h-5 fill-current stroke-[2.5]" />
             <span>Putar Sekarang (OK)</span>
           </button>
 
-          <span className="text-slate-400 text-xs font-medium">
+          <span className="text-slate-400 text-sm font-semibold bg-slate-900/80 border border-slate-800 px-4 py-3 rounded-xl">
             Durasi: {video.duration || '45:00'}
           </span>
         </div>

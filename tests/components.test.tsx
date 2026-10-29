@@ -24,7 +24,7 @@ describe('TV UI Components', () => {
     expect(screen.getByText('45:00')).toBeDefined();
     const cardEl = container.firstElementChild as HTMLElement;
     expect(cardEl.className).toContain('border-brand');
-    expect(cardEl.className).toContain('scale-105');
+    expect(cardEl.className).toContain('scale-108');
   });
 
   it('renders TvNavbar with brand logo and navigation tabs', () => {

@@ -12,6 +12,9 @@ export default {
         cardSecondary: '#1E293B',
         brand: '#F59E0B',
       },
+      scale: {
+        '108': '1.08',
+      },
       boxShadow: {
         'tv-focus': '0 0 25px rgba(245, 158, 11, 0.65)',
       },

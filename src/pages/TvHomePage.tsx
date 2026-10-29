@@ -105,13 +105,19 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
         </div>
       ) : activeTab === 'playlist' ? (
         <main>
-          <h2 className="text-xl font-bold text-white mb-6">Semua Episode Playlist</h2>
-          <div className="grid grid-cols-4 gap-6 pb-12">
+          <div className="flex items-center gap-3 mb-8">
+            <h2 className="text-2xl font-black text-white">Semua Episode Playlist</h2>
+            <span className="text-xs font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full">
+              {playlistVideos.length} Episode
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-16">
             {playlistVideos.map((video, idx) => (
               <TvVideoCard
                 key={video.id}
                 id={`playlist-card-${idx}`}
                 video={video}
+                className="w-full"
                 onSelect={() => onPlayVideo(video.slug)}
               />
             ))}

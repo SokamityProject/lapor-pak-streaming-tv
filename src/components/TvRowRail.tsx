@@ -18,13 +18,17 @@ export const TvRowRail: React.FC<TvRowRailProps> = ({
   if (!videos || videos.length === 0) return null;
 
   return (
-    <div className="mb-8">
-      <h3 className="text-base font-bold text-slate-200 mb-3.5 tracking-wide flex items-center gap-2">
-        <span>{title}</span>
-        <span className="text-xs font-normal text-slate-500">({videos.length} episode)</span>
-      </h3>
+    <div className="mb-12">
+      <div className="flex items-center gap-3 mb-4">
+        <h3 className="text-xl md:text-2xl font-black text-white tracking-wide">
+          {title}
+        </h3>
+        <span className="text-xs font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full">
+          {videos.length} Episode
+        </span>
+      </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none scroll-smooth">
+      <div className="flex gap-7 lg:gap-8 overflow-x-auto py-6 px-3 -mx-3 scrollbar-none scroll-smooth">
         {videos.map((video, idx) => (
           <TvVideoCard
             key={video.id}
