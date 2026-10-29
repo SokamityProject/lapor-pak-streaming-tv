@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { initTvSession, fetchHomeFeed, fetchWatchDetails, fetchPlaylist, saveProgress } from '../src/services/api';
+import { initTvSession, fetchHomeFeed, fetchWatchDetails, saveProgress } from '../src/services/api';
 
 describe('TV API Service', () => {
   beforeEach(() => {

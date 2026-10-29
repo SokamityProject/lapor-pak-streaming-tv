@@ -18,6 +18,10 @@ const DEFAULT_ADMIN: LoginCredentials = {
 let activeSession = false;
 let currentCredentials = DEFAULT_ADMIN;
 
+export function isSessionActive(): boolean {
+  return activeSession;
+}
+
 /**
  * Perform silent auto-login to backend to establish PHPSESSID session.
  */

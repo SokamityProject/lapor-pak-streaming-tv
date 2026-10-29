@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HomeFeedData, VideoItem } from '../types/api';
+import { HomeFeedData } from '../types/api';
 import { fetchHomeFeed, initTvSession } from '../services/api';
 import { TvNavbar } from '../components/TvNavbar';
 import { TvHeroSpotlight } from '../components/TvHeroSpotlight';

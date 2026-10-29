@@ -9,7 +9,7 @@ export interface TvHeroSpotlightProps {
 }
 
 export const TvHeroSpotlight: React.FC<TvHeroSpotlightProps> = ({ video, onPlay }) => {
-  const playFocus = useTvFocus({
+  const playFocus = useTvFocus<HTMLButtonElement>({
     id: 'hero-play-btn',
     onSelect: () => video && onPlay(video.slug),
     autoFocus: true,
