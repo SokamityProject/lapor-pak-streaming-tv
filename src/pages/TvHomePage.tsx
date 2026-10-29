@@ -65,7 +65,8 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
       }
     } catch (err: any) {
       console.error('Failed to load TV feed:', err);
-      setError('Gagal menghubungkan ke server TV. Pastikan koneksi internet aktif.');
+      const detail = err?.message || String(err);
+      setError(`Gagal menghubungkan ke server TV: ${detail}`);
       SpatialNavigation.setScope('error-screen');
     } finally {
       setIsLoading(false);

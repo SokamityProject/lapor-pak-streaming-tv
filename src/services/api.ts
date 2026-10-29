@@ -48,10 +48,10 @@ export function setActivePhpSession(val: string | null): void {
 export async function ensureInfinityFreeCookie(): Promise<string | null> {
   if (activeTestCookie) return activeTestCookie;
 
-  try {
-    const rootUrl = API_BASE.replace(/\/api\/?$/, '');
-    let html = '';
+  const rootUrl = API_BASE.replace(/\/api\/?$/, '');
+  let html = '';
 
+  try {
     if (Capacitor.isNativePlatform()) {
       const res = await CapacitorHttp.get({
         url: rootUrl,
@@ -83,8 +83,9 @@ export async function ensureInfinityFreeCookie(): Promise<string | null> {
         // Ignored in non-native / test environments
       }
     }
-  } catch (err) {
-    console.warn('InfinityFree challenge preflight skipped or failed:', err);
+  } catch (err: any) {
+    console.error('InfinityFree challenge preflight error:', err);
+    throw new Error(`Gagal membuka firewall InfinityFree: ${err?.message || err}`);
   }
 
   return activeTestCookie;
@@ -98,27 +99,27 @@ export async function initTvSession(credentials?: LoginCredentials): Promise<boo
     currentCredentials = credentials;
   }
 
+  await ensureInfinityFreeCookie();
+
+  const rootUrl = API_BASE.replace(/\/api\/?$/, '');
+  const loginUrl = `${API_BASE}/auth/login`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  const cookieParts: string[] = [];
+  if (activeTestCookie) cookieParts.push(`__test=${activeTestCookie}`);
+  if (activePhpSession) cookieParts.push(`PHPSESSID=${activePhpSession}`);
+  if (cookieParts.length > 0) {
+    headers['Cookie'] = cookieParts.join('; ');
+  }
+
+  let status = 0;
+  let data: any = null;
+  let setCookieHeaders: string | string[] | undefined;
+
   try {
-    await ensureInfinityFreeCookie();
-
-    const rootUrl = API_BASE.replace(/\/api\/?$/, '');
-    const loginUrl = `${API_BASE}/auth/login`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    };
-
-    const cookieParts: string[] = [];
-    if (activeTestCookie) cookieParts.push(`__test=${activeTestCookie}`);
-    if (activePhpSession) cookieParts.push(`PHPSESSID=${activePhpSession}`);
-    if (cookieParts.length > 0) {
-      headers['Cookie'] = cookieParts.join('; ');
-    }
-
-    let status = 0;
-    let data: any = null;
-    let setCookieHeaders: string | string[] | undefined;
-
     if (Capacitor.isNativePlatform()) {
       const res = await CapacitorHttp.post({
         url: loginUrl,
@@ -138,34 +139,36 @@ export async function initTvSession(credentials?: LoginCredentials): Promise<boo
       status = res.status;
       data = await res.json();
     }
+  } catch (err: any) {
+    console.error('TV Auto-login network error:', err);
+    throw new Error(`Gagal menghubungi endpoint login: ${err?.message || err}`);
+  }
 
-    // Extract regenerated PHPSESSID from set-cookie
-    if (setCookieHeaders) {
-      const cookieStr = Array.isArray(setCookieHeaders) ? setCookieHeaders.join('; ') : setCookieHeaders;
-      const matches = [...cookieStr.matchAll(/PHPSESSID=([a-zA-Z0-9]+)/g)];
-      if (matches.length > 0) {
-        activePhpSession = matches[matches.length - 1][1];
-        try {
-          await CapacitorCookies.setCookie({
-            url: rootUrl,
-            key: 'PHPSESSID',
-            value: activePhpSession,
-          });
-        } catch {
-          // Ignored in non-native / test environments
-        }
+  // Extract regenerated PHPSESSID from set-cookie
+  if (setCookieHeaders) {
+    const cookieStr = Array.isArray(setCookieHeaders) ? setCookieHeaders.join('; ') : setCookieHeaders;
+    const matches = [...cookieStr.matchAll(/PHPSESSID=([a-zA-Z0-9]+)/g)];
+    if (matches.length > 0) {
+      activePhpSession = matches[matches.length - 1][1];
+      try {
+        await CapacitorCookies.setCookie({
+          url: rootUrl,
+          key: 'PHPSESSID',
+          value: activePhpSession,
+        });
+      } catch {
+        // Ignored in non-native / test environments
       }
     }
-
-    if (status === 200 && data && data.ok) {
-      activeSession = true;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error('TV Auto-login failed:', err);
-    return false;
   }
+
+  if (status === 200 && data && data.ok) {
+    activeSession = true;
+    return true;
+  }
+
+  const msg = data?.message || `Status HTTP ${status}`;
+  throw new Error(`Login admin ditolak: ${msg}`);
 }
 
 /**
@@ -227,7 +230,8 @@ async function tvApiFetch<T>(endpoint: string, options: RequestInit = {}): Promi
   }
 
   if (status < 200 || status >= 300) {
-    throw new Error(`API Request to ${endpoint} failed with status ${status}`);
+    const msg = data?.message || `Status HTTP ${status}`;
+    throw new Error(`API ${endpoint} error: ${msg}`);
   }
 
   return (data.data ?? data) as T;
