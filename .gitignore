@@ -1,0 +1,10 @@
+node_modules
+dist
+.superpowers
+graphify-out
+.taste-skill
+.DS_Store
+*.local
+android/.gradle
+android/build
+android/app/build
