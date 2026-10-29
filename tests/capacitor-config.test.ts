@@ -20,5 +20,7 @@ describe('Capacitor Android TV Manifest Config', () => {
     const configContent = fs.readFileSync(configPath, 'utf-8');
     expect(configContent).toContain('com.laporpak.tv');
     expect(configContent).toContain('Lapor Pak! TV');
+    expect(configContent).toContain('CapacitorHttp');
+    expect(configContent).toContain('CapacitorCookies');
   });
 });
