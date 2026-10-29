@@ -215,17 +215,17 @@ class SpatialNavigationManager {
           const target = this.findBestCardInRail(prevRailId, cardIdx);
           if (target) return target;
         }
-        // At top rail, going UP always goes to Hero Spotlight Play Button if present, else active sidebar
+        // At top rail, going UP always goes to Hero Spotlight Play Button if present, else stay at top card
         if (this.items.has('hero-play-btn')) return 'hero-play-btn';
-        return this.getActiveSidebarItem();
+        return currentId;
       }
     }
 
-    // 4. Playlist Grid Cards (4 columns): playlist-card-{idx}
+    // 4. Playlist Grid Cards (3 columns): playlist-card-{idx}
     const playlistMatch = currentId.match(/^playlist-card-(\d+)$/);
     if (playlistMatch) {
       const idx = parseInt(playlistMatch[1], 10);
-      const cols = 4;
+      const cols = 3;
       if (direction === 'left') {
         if (idx % cols !== 0 && this.items.has(`playlist-card-${idx - 1}`)) {
           return `playlist-card-${idx - 1}`;
@@ -250,11 +250,11 @@ class SpatialNavigationManager {
       }
     }
 
-    // 5. History Grid Cards (4 columns): history-card-{idx}
+    // 5. History Grid Cards (3 columns): history-card-{idx}
     const historyMatch = currentId.match(/^history-card-(\d+)$/);
     if (historyMatch) {
       const idx = parseInt(historyMatch[1], 10);
-      const cols = 4;
+      const cols = 3;
       if (direction === 'left') {
         if (idx % cols !== 0 && this.items.has(`history-card-${idx - 1}`)) {
           return `history-card-${idx - 1}`;

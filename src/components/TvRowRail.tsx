@@ -49,7 +49,7 @@ export const TvRowRail: React.FC<TvRowRailProps> = ({
       </div>
 
       {/* Horizontal scrolling container with generous headroom so focused cards never clip */}
-      <div className="flex gap-5 overflow-x-hidden py-4 px-2 -mx-2 scrollbar-none items-center">
+      <div className="flex gap-6 overflow-x-hidden py-6 px-6 scrollbar-none items-center">
         {videos.map((video, idx) => (
           <TvVideoCard
             key={video.id}

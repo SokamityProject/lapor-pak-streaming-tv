@@ -223,12 +223,11 @@ describe('TV UI Components', () => {
     expect(screen.getByText('Eps. 10 - Kasus Pertama')).toBeDefined();
     expect(screen.getByText('Eps. 11 - Kasus Kedua')).toBeDefined();
 
-    // Verify scrolling container has headroom classes
+    // Verify scrolling container has generous headroom classes so cards never clip
     const scrollContainer = container.querySelector('.overflow-x-hidden');
     expect(scrollContainer).toBeDefined();
-    expect(scrollContainer?.className).toContain('py-4');
-    expect(scrollContainer?.className).toContain('px-2');
-    expect(scrollContainer?.className).toContain('-mx-2');
+    expect(scrollContainer?.className).toContain('py-6');
+    expect(scrollContainer?.className).toContain('px-6');
 
     // Click card
     fireEvent.click(screen.getByText('Eps. 10 - Kasus Pertama'));
@@ -290,6 +289,25 @@ describe('TV UI Components', () => {
 
     // In-progress percentage badge
     expect(screen.getByText('40%')).toBeDefined();
+  });
+
+  it('prefixes video title with Eps. and does not render top-left episode badge on thumbnail', () => {
+    const rawVideo = {
+      id: 505,
+      title: 'Misteri Bebek Pak RT',
+      episode: '2026-10-28',
+      thumbnail: 'https://example.com/thumb.jpg',
+      duration: '42:00',
+      slug: 'misteri-bebek',
+      progress: 0,
+    };
+
+    render(<TvVideoCard video={rawVideo} onSelect={() => {}} />);
+
+    // Title should be prefixed with "Eps. "
+    expect(screen.getByText('Eps. Misteri Bebek Pak RT')).toBeDefined();
+    // Top-left episode badge with raw "EPS. 2026-10-28" should NOT be present
+    expect(screen.queryByText('EPS. 2026-10-28')).toBeNull();
   });
 
   it('useTvFocus auto-scrolls to start for nav/hero and center for cards', () => {

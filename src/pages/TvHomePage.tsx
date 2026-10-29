@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { HomeFeedData, VideoItem } from '../types/api';
 import { fetchHomeFeed, fetchPlaylist, initTvSession } from '../services/api';
 import { TvSidebar } from '../components/TvSidebar';
-import { TvHeroSpotlight } from '../components/TvHeroSpotlight';
 import { TvRowRail } from '../components/TvRowRail';
 import { TvVideoCard } from '../components/TvVideoCard';
 import { TvExitModal, exitTvApp } from '../components/TvExitModal';
@@ -193,7 +192,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
       />
 
       {/* Right Pane: Content Feed */}
-      <div className="flex-1 h-full overflow-y-auto px-8 md:px-12 py-6 scrollbar-none ml-20">
+      <div className="flex-1 h-full overflow-y-auto pl-10 pr-8 md:pl-12 md:pr-12 py-6 scrollbar-none ml-20">
         {isInitialLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
             <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center">
@@ -232,7 +231,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
                 <span className="text-xs font-medium">Memuat berkas playlist...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
+              <div className="grid grid-cols-3 gap-6 pb-8">
                 {playlistVideos.map((video, idx) => (
                   <TvVideoCard
                     key={video.id}
@@ -268,7 +267,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
+              <div className="grid grid-cols-3 gap-6 pb-8">
                 {historyVideos.map((video, idx) => (
                   <TvVideoCard
                     key={video.id}
@@ -283,14 +282,6 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
           </main>
         ) : (
           <main className="pb-8">
-            {/* Hero Billboard / Spotlight */}
-            {feed?.hero && (
-              <TvHeroSpotlight
-                video={feed.hero}
-                onPlay={(slug) => onPlayVideo(slug)}
-              />
-            )}
-
             {/* Continue Watching Rail */}
             {feed?.continue_watching && feed.continue_watching.length > 0 && (
               <TvRowRail

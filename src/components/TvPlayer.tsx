@@ -333,6 +333,18 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const formatPlayerTitle = (title: string) => {
+    if (!title) return 'Eps.';
+    const trimmed = title.trim();
+    if (/^eps\.?/i.test(trimmed)) {
+      return trimmed.replace(/^eps\.?\s*/i, 'Eps. ');
+    }
+    if (/^episode\s*/i.test(trimmed)) {
+      return trimmed.replace(/^episode\s*/i, 'Eps. ');
+    }
+    return `Eps. ${trimmed}`;
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden">
       {hasPlaybackError ? (
@@ -433,15 +445,12 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
                 </button>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="bg-brand text-slate-950 font-black text-[10px] px-2 py-0.5 rounded shadow">
-                      EPS. {video.episode}
-                    </span>
-                    <span className="text-zinc-400 text-xs">
-                      Lapor Pak! Streaming TV
+                    <span className="bg-brand text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded shadow tracking-wide">
+                      Lapor Pak Streaming
                     </span>
                   </div>
-                  <h2 className="text-lg md:text-xl font-black text-white mt-0.5 tracking-tight">
-                    {video.title}
+                  <h2 className="text-lg md:text-xl font-black text-white mt-1 tracking-tight">
+                    {formatPlayerTitle(video.title)}
                   </h2>
                 </div>
               </div>

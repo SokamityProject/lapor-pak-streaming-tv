@@ -66,18 +66,26 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
 
   const formattedDate = formatEpisodeDate(video.episode, video.created_at);
 
-  const episodeBadgeText = video.episode
-    ? video.episode.toUpperCase().startsWith('EPS.')
-      ? video.episode.toUpperCase()
-      : `EPS. ${video.episode}`
-    : null;
+  const formatDisplayTitle = (title: string) => {
+    if (!title) return 'Eps.';
+    const trimmed = title.trim();
+    if (/^eps\.?/i.test(trimmed)) {
+      return trimmed.replace(/^eps\.?\s*/i, 'Eps. ');
+    }
+    if (/^episode\s*/i.test(trimmed)) {
+      return trimmed.replace(/^episode\s*/i, 'Eps. ');
+    }
+    return `Eps. ${trimmed}`;
+  };
+
+  const displayTitle = formatDisplayTitle(video.title);
 
   return (
     <div
       ref={ref}
       id={id}
       onClick={onSelect}
-      className={`group relative flex flex-col bg-[#0F172A] rounded-xl overflow-hidden border-2 transition-transform duration-100 cursor-pointer ${className} ${
+      className={`group relative flex flex-col bg-[#0F172A] rounded-xl overflow-hidden border-2 transition-transform duration-100 cursor-pointer origin-center ${className} ${
         focused
           ? 'border-brand scale-108 shadow-md ring-2 ring-brand/40 z-20 bg-[#1E293B]'
           : 'border-white/10 opacity-90'
@@ -88,7 +96,7 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
         {imgSrc && !hasError ? (
           <img
             src={imgSrc}
-            alt={video.title}
+            alt={displayTitle}
             onError={handleImgError}
             className="w-full h-full object-cover"
             loading="lazy"
@@ -108,13 +116,6 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
             <div className="w-10 h-10 rounded-full bg-brand text-slate-950 flex items-center justify-center shadow-md">
               <Play className="w-4 h-4 fill-current ml-0.5" />
             </div>
-          </div>
-        )}
-
-        {/* Top-Left: Episode Badge */}
-        {episodeBadgeText && (
-          <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-black text-brand border border-white/10 shadow">
-            {episodeBadgeText}
           </div>
         )}
 
@@ -158,9 +159,9 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
           className={`font-bold text-xs sm:text-sm line-clamp-1 leading-snug transition-colors ${
             focused ? 'text-brand' : 'text-white'
           }`}
-          title={video.title}
+          title={displayTitle}
         >
-          {video.title}
+          {displayTitle}
         </h3>
       </div>
     </div>

@@ -212,5 +212,22 @@ describe('Spatial Navigation Engine', () => {
       SpatialNavigation.move('left');
       expect(SpatialNavigation.getCurrentFocus()).toBe('nav-history');
     });
+
+    it('navigates vertically in 3-column playlist grid on ArrowDown and ArrowUp', () => {
+      SpatialNavigation.register('nav-playlist', { x: 0, y: 110, width: 80, height: 48 });
+      SpatialNavigation.register('playlist-card-0', { x: 200, y: 100, width: 256, height: 144 });
+      SpatialNavigation.register('playlist-card-1', { x: 480, y: 100, width: 256, height: 144 });
+      SpatialNavigation.register('playlist-card-2', { x: 760, y: 100, width: 256, height: 144 });
+      SpatialNavigation.register('playlist-card-3', { x: 200, y: 300, width: 256, height: 144 });
+
+      // In 3-column layout, Down from card 0 should target card 3
+      SpatialNavigation.setFocus('playlist-card-0');
+      SpatialNavigation.move('down');
+      expect(SpatialNavigation.getCurrentFocus()).toBe('playlist-card-3');
+
+      // In 3-column layout, Up from card 3 should target card 0
+      SpatialNavigation.move('up');
+      expect(SpatialNavigation.getCurrentFocus()).toBe('playlist-card-0');
+    });
   });
 });
