@@ -17,8 +17,13 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 public class MainActivity extends BridgeActivity {
+    private static final String TV_USER_AGENT = "Mozilla/5.0 (Linux; Android 12; Android TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Set standard TV browser user agent so InfinityFree firewall does not block with 403
+        System.setProperty("http.agent", TV_USER_AGENT);
+
         trustAllCertificates();
         super.onCreate(savedInstanceState);
 
@@ -29,6 +34,11 @@ public class MainActivity extends BridgeActivity {
                     handler.proceed();
                 }
             });
+
+            // Also configure webview user-agent
+            try {
+                bridge.getWebView().getSettings().setUserAgentString(TV_USER_AGENT);
+            } catch (Exception ignored) {}
         }
     }
 

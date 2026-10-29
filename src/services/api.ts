@@ -12,6 +12,9 @@ export interface LoginCredentials {
   password: string;
 }
 
+export const TV_USER_AGENT =
+  'Mozilla/5.0 (Linux; Android 12; Android TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 const DEFAULT_ADMIN: LoginCredentials = {
   username: (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_ADMIN_USER) || 'syamsubahar',
   password: (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_ADMIN_PASS) || 'syamsu66',
@@ -56,12 +59,14 @@ export async function ensureInfinityFreeCookie(): Promise<string | null> {
       const res = await CapacitorHttp.get({
         url: rootUrl,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 12; Android TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': TV_USER_AGENT,
         },
       });
       html = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
     } else {
-      const res = await fetch(rootUrl);
+      const res = await fetch(rootUrl, {
+        headers: { 'User-Agent': TV_USER_AGENT },
+      });
       if (typeof res.text === 'function') {
         html = await res.text();
       } else if (typeof res.json === 'function') {
@@ -106,6 +111,7 @@ export async function initTvSession(credentials?: LoginCredentials): Promise<boo
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    'User-Agent': TV_USER_AGENT,
   };
 
   const cookieParts: string[] = [];
@@ -180,6 +186,7 @@ async function tvApiFetch<T>(endpoint: string, options: RequestInit = {}): Promi
   const url = `${API_BASE}${endpoint}`;
   const headers: Record<string, string> = {
     Accept: 'application/json',
+    'User-Agent': TV_USER_AGENT,
     ...((options.headers as Record<string, string>) || {}),
   };
 
