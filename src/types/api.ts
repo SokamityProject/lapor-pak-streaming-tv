@@ -9,6 +9,8 @@ export interface VideoItem {
   last_time?: number;
   is_completed?: boolean;
   created_at?: string;
+  synopsis?: string;
+  description?: string;
 }
 
 export interface WatchVideoDetails {
