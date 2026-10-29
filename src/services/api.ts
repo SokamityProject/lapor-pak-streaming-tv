@@ -1,6 +1,12 @@
 import { Capacitor, CapacitorHttp, CapacitorCookies } from '@capacitor/core';
 import { HomeFeedData, PlaylistData, WatchVideoDetails } from '../types/api';
 import { extractAndSolveChallenge } from './slowAes';
+import {
+  applyLocalProgressToFeed,
+  applyLocalProgressToPlaylist,
+  applyLocalProgressToWatchDetails,
+  saveLocalProgress,
+} from './localProgress';
 
 const DEFAULT_API_BASE = 'https://laporpak.my.to/api';
 export const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) 
@@ -245,41 +251,57 @@ async function tvApiFetch<T>(endpoint: string, options: RequestInit = {}): Promi
 }
 
 /**
- * Fetch home feed data (Hero + Continue Watching + Months).
+ * Fetch home feed data (Hero + Continue Watching + Months),
+ * transformed to use local TV playback progress.
  */
 export async function fetchHomeFeed(): Promise<HomeFeedData> {
-  return tvApiFetch<HomeFeedData>('/videos/home');
+  const data = await tvApiFetch<HomeFeedData>('/videos/home');
+  return applyLocalProgressToFeed(data);
 }
 
 /**
- * Fetch playlist list.
+ * Fetch playlist list with local TV playback progress.
  */
 export async function fetchPlaylist(month?: string, search?: string): Promise<PlaylistData> {
   const params = new URLSearchParams();
   if (month) params.append('month', month);
   if (search) params.append('search', search);
   const query = params.toString() ? `?${params.toString()}` : '';
-  return tvApiFetch<PlaylistData>(`/videos${query}`);
+  const data = await tvApiFetch<PlaylistData>(`/videos${query}`);
+  return applyLocalProgressToPlaylist(data);
 }
 
 /**
- * Fetch specific video details with streaming HD/SD URLs.
+ * Fetch specific video details with streaming HD/SD URLs and local TV resume time.
+ * Supports retry=true to force-refresh Facebook CDN URLs when stream expires.
  */
-export async function fetchWatchDetails(slug: string): Promise<WatchVideoDetails> {
-  return tvApiFetch<WatchVideoDetails>(`/videos/${encodeURIComponent(slug)}`);
+export async function fetchWatchDetails(slug: string, retry = false): Promise<WatchVideoDetails> {
+  const query = retry ? '?retry=1' : '';
+  const res = await tvApiFetch<any>(`/videos/${encodeURIComponent(slug)}${query}`);
+  const raw = res && res.video ? res.video : res && res.data ? res.data : res;
+  return applyLocalProgressToWatchDetails(raw as WatchVideoDetails);
 }
 
 /**
- * Save current playback progress to backend.
+ * Save playback progress locally on this TV (does not modify server database).
  */
-export async function saveProgress(videoId: number, time: number, completed: boolean): Promise<void> {
-  await tvApiFetch('/videos/progress', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      video_id: videoId,
-      last_time: Math.floor(time),
-      is_completed: completed ? 1 : 0,
-    }),
-  });
+export async function saveProgress(
+  videoId: number,
+  time: number,
+  completed: boolean,
+  videoMeta?: { slug?: string; title?: string; episode?: string; thumbnail?: string; duration?: string }
+): Promise<void> {
+  saveLocalProgress(
+    {
+      id: videoId,
+      slug: videoMeta?.slug || String(videoId),
+      title: videoMeta?.title,
+      episode: videoMeta?.episode,
+      thumbnail: videoMeta?.thumbnail,
+      duration: videoMeta?.duration,
+    },
+    time,
+    undefined,
+    completed
+  );
 }

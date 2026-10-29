@@ -7,7 +7,8 @@ import { TvRowRail } from '../components/TvRowRail';
 import { TvVideoCard } from '../components/TvVideoCard';
 import { SpatialNavigation } from '../services/navigation';
 import { useTvFocus } from '../hooks/useTvFocus';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { getAllWatchedVideos } from '../services/localProgress';
+import { Loader2, AlertCircle, Tv } from 'lucide-react';
 
 export interface TvRetryButtonProps {
   onRetry: () => void;
@@ -47,6 +48,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
   const [activeTab, setActiveTab] = useState<'home' | 'playlist' | 'history'>('home');
   const [feed, setFeed] = useState<HomeFeedData | null>(null);
   const [playlistVideos, setPlaylistVideos] = useState<VideoItem[]>([]);
+  const [historyVideos, setHistoryVideos] = useState<VideoItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,12 +58,15 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
     SpatialNavigation.setScope(null);
     try {
       await initTvSession();
-      if (activeTab === 'home' || activeTab === 'history') {
+      if (activeTab === 'home') {
         const data = await fetchHomeFeed();
         setFeed(data);
       } else if (activeTab === 'playlist') {
         const data = await fetchPlaylist();
         setPlaylistVideos(data.items || []);
+      } else if (activeTab === 'history') {
+        const watched = getAllWatchedVideos();
+        setHistoryVideos(watched);
       }
     } catch (err: any) {
       console.error('Failed to load TV feed:', err);
@@ -122,6 +127,38 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
               />
             ))}
           </div>
+        </main>
+      ) : activeTab === 'history' ? (
+        <main>
+          <div className="flex items-center gap-3 mb-8">
+            <h2 className="text-2xl font-black text-white">Riwayat Menonton di TV Ini</h2>
+            <span className="text-xs font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full">
+              {historyVideos.length} Episode
+            </span>
+          </div>
+          {historyVideos.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-slate-500">
+              <Tv className="w-16 h-16 text-slate-700 mb-4" />
+              <p className="text-base font-semibold text-slate-400">
+                Belum ada riwayat tontonan di perangkat TV ini.
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Episode yang Anda tonton di TV akan otomatis tercatat di sini.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-16">
+              {historyVideos.map((video, idx) => (
+                <TvVideoCard
+                  key={video.id}
+                  id={`history-card-${idx}`}
+                  video={video}
+                  className="w-full"
+                  onSelect={() => onPlayVideo(video.slug)}
+                />
+              ))}
+            </div>
+          )}
         </main>
       ) : (
         <main>

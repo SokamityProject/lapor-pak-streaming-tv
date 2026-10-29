@@ -41,6 +41,9 @@ public class MainActivity extends BridgeActivity {
                 WebView wv = bridge.getWebView();
                 if (wv != null) {
                     wv.getSettings().setUserAgentString(TV_USER_AGENT);
+                    wv.getSettings().setMediaPlaybackRequiresUserGesture(false);
+                    wv.getSettings().setDomStorageEnabled(true);
+                    wv.getSettings().setDatabaseEnabled(true);
                     CookieManager cm = CookieManager.getInstance();
                     cm.setAcceptCookie(true);
                     cm.setAcceptThirdPartyCookies(wv, true);

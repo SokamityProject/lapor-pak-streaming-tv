@@ -76,6 +76,7 @@ const ExitModal: React.FC<ExitModalProps> = ({ onConfirm, onCancel }) => {
 export const App: React.FC = () => {
   const [activeVideo, setActiveVideo] = useState<WatchVideoDetails | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [homeKey, setHomeKey] = useState(0);
 
   const handlePlayVideo = async (slug: string) => {
     try {
@@ -86,15 +87,20 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleClosePlayer = useCallback(() => {
+    setActiveVideo(null);
+    setHomeKey((k) => k + 1);
+  }, []);
+
   const handleHardwareBack = useCallback(() => {
     if (activeVideo) {
-      setActiveVideo(null);
+      handleClosePlayer();
     } else if (showExitModal) {
       setShowExitModal(false);
     } else {
       setShowExitModal(true);
     }
-  }, [activeVideo, showExitModal]);
+  }, [activeVideo, showExitModal, handleClosePlayer]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -130,9 +136,9 @@ export const App: React.FC = () => {
   return (
     <div className="w-screen h-screen overflow-hidden bg-background">
       {activeVideo ? (
-        <TvPlayer video={activeVideo} onClose={() => setActiveVideo(null)} />
+        <TvPlayer video={activeVideo} onClose={handleClosePlayer} />
       ) : (
-        <TvHomePage onPlayVideo={handlePlayVideo} />
+        <TvHomePage key={homeKey} onPlayVideo={handlePlayVideo} />
       )}
 
       {showExitModal && (

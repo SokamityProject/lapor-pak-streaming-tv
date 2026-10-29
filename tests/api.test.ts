@@ -77,10 +77,11 @@ describe('TV API Service', () => {
     expect(feed.hero?.title).toBe('Episode 1');
   });
 
-  it('fetches watch details including streaming HD and SD URLs', async () => {
+  it('fetches watch details including streaming HD and SD URLs unwrapping video property', async () => {
+    // Real PHP backend response has `video` property
     const mockDetails = {
       ok: true,
-      data: {
+      video: {
         id: 1,
         title: 'Episode 1',
         episode: '1',
@@ -91,7 +92,8 @@ describe('TV API Service', () => {
         sd: 'https://video.fbcdn.net/sd.mp4',
         resume_time: 120,
         is_completed: false
-      }
+      },
+      next_up: []
     };
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -102,10 +104,11 @@ describe('TV API Service', () => {
 
     const details = await fetchWatchDetails('eps-1');
     expect(details.hd).toBe('https://video.fbcdn.net/hd.mp4');
-    expect(details.resume_time).toBe(120);
+    expect(details.sd).toBe('https://video.fbcdn.net/sd.mp4');
+    expect(details.title).toBe('Episode 1');
   });
 
-  it('saves playback progress to backend', async () => {
+  it('manages video progress locally without overriding remote user database', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -113,13 +116,16 @@ describe('TV API Service', () => {
       json: async () => ({ ok: true }),
     } as unknown as Response);
 
-    await saveProgress(1, 450, false);
-    expect(global.fetch).toHaveBeenCalledWith(
+    await saveProgress(1, 450, false, { slug: 'eps-1', title: 'Episode 1', duration: '40:00' });
+    // Local TV storage should store the progress
+    const { getLocalProgress } = await import('../src/services/localProgress');
+    const local = getLocalProgress(1);
+    expect(local).not.toBeNull();
+    expect(local?.lastTime).toBe(450);
+    // Remote database API endpoint is not touched
+    expect(global.fetch).not.toHaveBeenCalledWith(
       expect.stringContaining('/api/videos/progress'),
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ video_id: 1, last_time: 450, is_completed: 0 })
-      })
+      expect.anything()
     );
   });
 });
