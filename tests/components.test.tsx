@@ -391,23 +391,56 @@ describe('TV UI Components', () => {
     SpatialNavigation.reset();
   });
 
-  it('exitTvApp calls TvAppBridge.exitApp when available, or window.close fallback', () => {
+  it('exitTvApp calls TvAppBridge.exitApp when available, or window.close fallback', async () => {
     const originalBridge = (window as any).TvAppBridge;
     const mockExit = vi.fn();
     (window as any).TvAppBridge = { exitApp: mockExit };
 
-    exitTvApp();
+    await exitTvApp();
     expect(mockExit).toHaveBeenCalledTimes(1);
 
     delete (window as any).TvAppBridge;
     const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {});
-    exitTvApp();
+    await exitTvApp();
     expect(closeSpy).toHaveBeenCalledTimes(1);
     closeSpy.mockRestore();
 
     if (originalBridge) {
       (window as any).TvAppBridge = originalBridge;
     }
+  });
+
+  it('traverses exit modal buttons using both Left/Right and Up/Down D-pad directions', () => {
+    const { unmount } = render(<TvExitModal isOpen={true} onConfirm={() => {}} onCancel={() => {}} />);
+
+    // Initially focused on exit-cancel-btn
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-cancel-btn');
+
+    // Right moves to exit-confirm-btn
+    act(() => {
+      SpatialNavigation.move('right');
+    });
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-confirm-btn');
+
+    // Left moves back to exit-cancel-btn
+    act(() => {
+      SpatialNavigation.move('left');
+    });
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-cancel-btn');
+
+    // Down also moves to exit-confirm-btn
+    act(() => {
+      SpatialNavigation.move('down');
+    });
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-confirm-btn');
+
+    // Up also moves back to exit-cancel-btn
+    act(() => {
+      SpatialNavigation.move('up');
+    });
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-cancel-btn');
+
+    unmount();
   });
 
   it('TvHomePage renders two-pane OTT shell layout and handles two-tier remote back flow', async () => {

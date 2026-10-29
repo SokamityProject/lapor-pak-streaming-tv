@@ -117,17 +117,17 @@ class SpatialNavigationManager {
    */
   private moveDeterministic(currentId: string, direction: Direction): string | null {
     if (this.activeScopeId) {
-      // If modal or dialog is active, handle modal buttons
-      if (currentId === 'exit-cancel-btn' && direction === 'right') {
+      // If modal or dialog is active, handle modal buttons (support both horizontal and vertical D-pad navigation)
+      if (currentId === 'exit-cancel-btn' && (direction === 'right' || direction === 'down')) {
         return this.items.has('exit-confirm-btn') ? 'exit-confirm-btn' : null;
       }
-      if (currentId === 'exit-confirm-btn' && direction === 'left') {
+      if (currentId === 'exit-confirm-btn' && (direction === 'left' || direction === 'up')) {
         return this.items.has('exit-cancel-btn') ? 'exit-cancel-btn' : null;
       }
-      if (currentId === 'player-retry-link-btn' && direction === 'right') {
+      if (currentId === 'player-retry-link-btn' && (direction === 'right' || direction === 'down')) {
         return this.items.has('player-error-back-btn') ? 'player-error-back-btn' : null;
       }
-      if (currentId === 'player-error-back-btn' && direction === 'left') {
+      if (currentId === 'player-error-back-btn' && (direction === 'left' || direction === 'up')) {
         return this.items.has('player-retry-link-btn') ? 'player-retry-link-btn' : null;
       }
       return null;

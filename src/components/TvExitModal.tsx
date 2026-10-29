@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { AlertTriangle, LogOut } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { useTvFocus } from '../hooks/useTvFocus';
 import { SpatialNavigation } from '../services/navigation';
 
@@ -9,18 +11,41 @@ export interface TvExitModalProps {
   onCancel: () => void;
 }
 
-export const exitTvApp = (): void => {
+export const exitTvApp = async (): Promise<void> => {
   if (typeof window === 'undefined') return;
 
+  // 1. Native Android TvAppBridge (in MainActivity.java)
   if ((window as any).TvAppBridge?.exitApp) {
-    (window as any).TvAppBridge.exitApp();
-  } else if ((window as any).Capacitor?.Plugins?.App?.exitApp) {
-    (window as any).Capacitor.Plugins.App.exitApp();
-  } else if ((window as any).navigator?.app?.exitApp) {
-    (window as any).navigator.app.exitApp();
-  } else {
-    window.close();
+    try {
+      (window as any).TvAppBridge.exitApp();
+      return;
+    } catch (e) {
+      console.warn('TvAppBridge exitApp error:', e);
+    }
   }
+
+  // 2. Official Capacitor App Plugin (on native Android/iOS only)
+  if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+    try {
+      await CapApp.exitApp();
+      return;
+    } catch (e) {
+      console.warn('CapApp exitApp error:', e);
+    }
+  }
+
+  // 3. Cordova fallback (on native Cordova only)
+  if ((window as any).navigator?.app?.exitApp) {
+    try {
+      (window as any).navigator.app.exitApp();
+      return;
+    } catch (e) {}
+  }
+
+  // 4. Browser window.close fallback
+  try {
+    window.close();
+  } catch (e) {}
 };
 
 export const TvExitModal: React.FC<TvExitModalProps> = ({

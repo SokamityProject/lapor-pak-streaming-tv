@@ -28,7 +28,13 @@ public class MainActivity extends BridgeActivity {
     public class TvAppBridge {
         @JavascriptInterface
         public void exitApp() {
-            runOnUiThread(() -> finish());
+            runOnUiThread(() -> {
+                try {
+                    finishAffinity();
+                } catch (Exception e) {
+                    finish();
+                }
+            });
         }
 
         @JavascriptInterface
