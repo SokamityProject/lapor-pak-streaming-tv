@@ -6,6 +6,9 @@ export interface UseTvFocusOptions {
   onSelect?: () => void;
   groupId?: string;
   autoFocus?: boolean;
+  scrollBlock?: ScrollLogicalPosition;
+  scrollInline?: ScrollLogicalPosition;
+  scrollBehavior?: ScrollBehavior;
 }
 
 export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
@@ -13,6 +16,9 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
   onSelect,
   groupId,
   autoFocus = false,
+  scrollBlock,
+  scrollInline,
+  scrollBehavior = 'auto',
 }: UseTvFocusOptions) {
   const ref = useRef<T | null>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -46,12 +52,22 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
       const focused = currentId === id;
       setIsFocused(focused);
       if (focused && ref.current) {
-        const isTopSection = id.startsWith('nav-') || id === 'hero-play-btn';
-        ref.current.scrollIntoView({
-          behavior: 'auto',
-          block: isTopSection ? 'start' : 'center',
-          inline: 'nearest',
-        });
+        const isTopSection =
+          id.startsWith('nav-') ||
+          id.startsWith('sidebar-') ||
+          id.startsWith('hero-') ||
+          id === 'hero-play-btn';
+
+        const defaultBlock: ScrollLogicalPosition = isTopSection ? 'start' : 'center';
+        const defaultInline: ScrollLogicalPosition = 'nearest';
+
+        if (typeof ref.current.scrollIntoView === 'function') {
+          ref.current.scrollIntoView({
+            behavior: scrollBehavior,
+            block: scrollBlock ?? defaultBlock,
+            inline: scrollInline ?? defaultInline,
+          });
+        }
       }
     });
 
@@ -59,7 +75,7 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
       unsubscribe();
       SpatialNavigation.unregister(id);
     };
-  }, [id, autoFocus, measureAndRegister]);
+  }, [id, autoFocus, measureAndRegister, scrollBlock, scrollInline, scrollBehavior]);
 
   return { ref, isFocused };
 }

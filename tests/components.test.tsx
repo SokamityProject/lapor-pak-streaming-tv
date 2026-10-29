@@ -1,10 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { TvVideoCard } from '../src/components/TvVideoCard';
+import { TvRowRail } from '../src/components/TvRowRail';
 import { TvNavbar } from '../src/components/TvNavbar';
 import { TvSidebar } from '../src/components/TvSidebar';
 import { TvHeroSpotlight } from '../src/components/TvHeroSpotlight';
 import { TvRetryButton } from '../src/pages/TvHomePage';
+import { useTvFocus } from '../src/hooks/useTvFocus';
+import { SpatialNavigation } from '../src/services/navigation';
 
 describe('TV UI Components', () => {
   it('renders TvVideoCard with title, duration badge, and focused golden border class', () => {
@@ -179,5 +182,155 @@ describe('TV UI Components', () => {
 
     expect(screen.getByRole('button', { name: /lanjutkan menonton/i })).toBeDefined();
     expect(screen.getByText(/55% ditonton/i)).toBeDefined();
+  });
+
+  it('renders TvRowRail with category icon, count badge, and video cards', () => {
+    const videos = [
+      {
+        id: 1,
+        title: 'Eps. 10 - Kasus Pertama',
+        episode: '10',
+        thumbnail: 'https://example.com/1.jpg',
+        duration: '40:00',
+        slug: 'eps-10',
+        progress: 0,
+      },
+      {
+        id: 2,
+        title: 'Eps. 11 - Kasus Kedua',
+        episode: '11',
+        thumbnail: 'https://example.com/2.jpg',
+        duration: '42:00',
+        slug: 'eps-11',
+        progress: 80,
+      },
+    ];
+
+    const handleSelect = vi.fn();
+
+    const { container } = render(
+      <TvRowRail
+        title="Lanjutkan Menonton"
+        videos={videos}
+        onSelectVideo={handleSelect}
+        railId="rail-continue"
+      />
+    );
+
+    expect(screen.getByText('Lanjutkan Menonton')).toBeDefined();
+    expect(screen.getByText('2')).toBeDefined();
+    expect(screen.getByText('Eps. 10 - Kasus Pertama')).toBeDefined();
+    expect(screen.getByText('Eps. 11 - Kasus Kedua')).toBeDefined();
+
+    // Verify scrolling container has headroom classes
+    const scrollContainer = container.querySelector('.overflow-x-hidden');
+    expect(scrollContainer).toBeDefined();
+    expect(scrollContainer?.className).toContain('py-4');
+    expect(scrollContainer?.className).toContain('px-2');
+    expect(scrollContainer?.className).toContain('-mx-2');
+
+    // Click card
+    fireEvent.click(screen.getByText('Eps. 10 - Kasus Pertama'));
+    expect(handleSelect).toHaveBeenCalledWith(videos[0]);
+  });
+
+  it('renders TvRowRail returns null when videos is empty', () => {
+    const { container } = render(
+      <TvRowRail
+        title="Kosong"
+        videos={[]}
+        onSelectVideo={() => {}}
+        railId="rail-empty"
+      />
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders TvVideoCard with completed badge and progress bar', () => {
+    const completedVideo = {
+      id: 201,
+      title: 'Eps. 201 - Kasus Selesai',
+      episode: '201',
+      thumbnail: 'https://example.com/thumb2.jpg',
+      duration: '45:00',
+      slug: 'eps-201',
+      progress: 100,
+      is_completed: true,
+    };
+
+    render(
+      <TvVideoCard video={completedVideo} onSelect={() => {}} />
+    );
+
+    expect(screen.getByText('Selesai')).toBeDefined();
+  });
+
+  it('renders TvVideoCard with focus ring and play overlay without blur filters', () => {
+    const video = {
+      id: 301,
+      title: 'Eps. 301 - Kasus Fokus',
+      episode: '301',
+      thumbnail: 'https://example.com/thumb3.jpg',
+      duration: '50:00',
+      slug: 'eps-301',
+      progress: 40,
+    };
+
+    const { container } = render(
+      <TvVideoCard video={video} isFocused={true} onSelect={() => {}} />
+    );
+
+    const cardEl = container.firstElementChild as HTMLElement;
+    expect(cardEl.className).toContain('border-brand');
+    expect(cardEl.className).toContain('scale-108');
+    expect(cardEl.className).toContain('shadow-md');
+    expect(cardEl.className).toContain('ring-2');
+    expect(cardEl.className).not.toContain('backdrop-blur');
+
+    // In-progress percentage badge
+    expect(screen.getByText('40%')).toBeDefined();
+  });
+
+  it('useTvFocus auto-scrolls to start for nav/hero and center for cards', () => {
+    SpatialNavigation.reset();
+    const scrollMock = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollMock;
+
+    function TestComponent() {
+      const navItem = useTvFocus({ id: 'nav-item' });
+      const cardItem = useTvFocus({ id: 'rail-card-0' });
+      return (
+        <div>
+          <div ref={navItem.ref} id="nav-item" />
+          <div ref={cardItem.ref} id="rail-card-0" />
+        </div>
+      );
+    }
+
+    const { unmount } = render(<TestComponent />);
+
+    act(() => {
+      SpatialNavigation.setFocus('rail-card-0');
+    });
+    expect(scrollMock).toHaveBeenCalledWith({
+      behavior: 'auto',
+      block: 'center',
+      inline: 'nearest',
+    });
+
+    scrollMock.mockClear();
+    act(() => {
+      SpatialNavigation.setFocus('nav-item');
+    });
+    expect(scrollMock).toHaveBeenCalledWith({
+      behavior: 'auto',
+      block: 'start',
+      inline: 'nearest',
+    });
+
+    unmount();
+    act(() => {
+      SpatialNavigation.reset();
+    });
   });
 });
