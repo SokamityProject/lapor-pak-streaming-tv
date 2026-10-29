@@ -11,6 +11,7 @@ describe('GitHub Actions CI/CD Workflow', () => {
     expect(content).toContain('actions/checkout');
     expect(content).toContain('actions/setup-node');
     expect(content).toContain('actions/setup-java');
+    expect(content).toContain("java-version: '21'");
     expect(content).toContain('gradlew assembleDebug');
     expect(content).toContain('actions/upload-artifact');
     expect(content).toContain('lapor-pak-tv.apk');
