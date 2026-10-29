@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTvFocus } from '../hooks/useTvFocus';
+export { TvSidebar, type TvSidebarProps } from './TvSidebar';
 
 export interface TvNavbarProps {
   activeTab: 'home' | 'playlist' | 'history';

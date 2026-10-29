@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { TvVideoCard } from '../src/components/TvVideoCard';
 import { TvNavbar } from '../src/components/TvNavbar';
+import { TvSidebar } from '../src/components/TvSidebar';
 import { TvRetryButton } from '../src/pages/TvHomePage';
 
 describe('TV UI Components', () => {
@@ -32,6 +33,45 @@ describe('TV UI Components', () => {
     expect(screen.getByText('LAPOR PAK! TV')).toBeDefined();
     expect(screen.getByText('Beranda')).toBeDefined();
     expect(screen.getByText('Playlist')).toBeDefined();
+  });
+
+  it('renders TvSidebar with brand badge, navigation items, and handles actions', () => {
+    const handleSelectTab = vi.fn();
+    const handleOpenExitModal = vi.fn();
+
+    render(
+      <TvSidebar
+        activeTab="home"
+        onSelectTab={handleSelectTab}
+        onOpenExitModal={handleOpenExitModal}
+      />
+    );
+
+    // Verify brand
+    expect(screen.getByText('LP')).toBeDefined();
+    expect(screen.getByText('LAPOR PAK! TV')).toBeDefined();
+
+    // Verify navigation items
+    expect(screen.getByTestId('nav-home')).toBeDefined();
+    expect(screen.getByTestId('nav-playlist')).toBeDefined();
+    expect(screen.getByTestId('nav-history')).toBeDefined();
+    expect(screen.getByTestId('nav-exit')).toBeDefined();
+
+    expect(screen.getByText('Beranda')).toBeDefined();
+    expect(screen.getByText('Playlist')).toBeDefined();
+    expect(screen.getByText('Riwayat')).toBeDefined();
+    expect(screen.getByText('Keluar')).toBeDefined();
+
+    // Test tab selection
+    fireEvent.click(screen.getByTestId('nav-playlist'));
+    expect(handleSelectTab).toHaveBeenCalledWith('playlist');
+
+    fireEvent.click(screen.getByTestId('nav-history'));
+    expect(handleSelectTab).toHaveBeenCalledWith('history');
+
+    // Test exit selection
+    fireEvent.click(screen.getByTestId('nav-exit'));
+    expect(handleOpenExitModal).toHaveBeenCalledTimes(1);
   });
 
   it('renders focusable TvRetryButton with remote focus styling when focused', () => {
