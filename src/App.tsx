@@ -104,29 +104,41 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Backspace' || e.key === 'GoBack') {
-        if (!activeVideo) {
-          e.preventDefault();
-          handleHardwareBack();
-        }
+      const key = e.key;
+      const code = (e as any).keyCode;
+      if (
+        key === 'Escape' ||
+        key === 'Backspace' ||
+        key === 'GoBack' ||
+        key === 'Back' ||
+        code === 4 ||
+        code === 27
+      ) {
+        e.preventDefault();
+        handleHardwareBack();
       }
     };
 
-    const handleCapacitorBack = () => {
+    const handleCustomBack = (e: Event) => {
+      e.preventDefault();
       handleHardwareBack();
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('backbutton', handleCapacitorBack);
+    window.addEventListener('tvbackbutton', handleCustomBack);
+    document.addEventListener('backbutton', handleCustomBack);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('backbutton', handleCapacitorBack);
+      window.removeEventListener('tvbackbutton', handleCustomBack);
+      document.removeEventListener('backbutton', handleCustomBack);
     };
-  }, [handleHardwareBack, activeVideo]);
+  }, [handleHardwareBack]);
 
   const handleExitApp = () => {
-    if ((window as any).navigator?.app?.exitApp) {
+    if ((window as any).TvAppBridge?.exitApp) {
+      (window as any).TvAppBridge.exitApp();
+    } else if ((window as any).navigator?.app?.exitApp) {
       (window as any).navigator.app.exitApp();
     } else {
       window.close();

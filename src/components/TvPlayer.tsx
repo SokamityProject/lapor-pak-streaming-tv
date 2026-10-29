@@ -6,37 +6,81 @@ import { useTvFocus } from '../hooks/useTvFocus';
 import { SpatialNavigation } from '../services/navigation';
 
 export interface PlayerCallbacks {
+  onCenterClick: () => void;
   onTogglePlay: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
 }
 
 export function handlePlayerRemoteKey(
-  event: { key: string },
+  event: { key: string; keyCode?: number },
   callbacks: PlayerCallbacks
 ): boolean {
-  switch (event.key) {
-    case 'Enter':
-    case ' ':
-    case 'MediaPlayPause':
-      callbacks.onTogglePlay();
-      return true;
-    case 'ArrowLeft':
-    case 'MediaRewind':
-      callbacks.onSeek(-10);
-      return true;
-    case 'ArrowRight':
-    case 'MediaFastForward':
-      callbacks.onSeek(10);
-      return true;
-    case 'Escape':
-    case 'Backspace':
-    case 'GoBack':
-      callbacks.onBack();
-      return true;
-    default:
-      return false;
+  const key = event.key;
+  const keyCode = event.keyCode;
+
+  // D-pad Center / OK button
+  if (
+    key === 'Enter' ||
+    key === ' ' ||
+    key === 'Select' ||
+    keyCode === 13 ||
+    keyCode === 23
+  ) {
+    callbacks.onCenterClick();
+    return true;
   }
+
+  // Dedicated Play/Pause media keys
+  if (
+    key === 'MediaPlayPause' ||
+    key === 'MediaPlay' ||
+    key === 'MediaPause' ||
+    keyCode === 85 ||
+    keyCode === 126 ||
+    keyCode === 127
+  ) {
+    callbacks.onTogglePlay();
+    return true;
+  }
+
+  // Left arrow / Rewind
+  if (
+    key === 'ArrowLeft' ||
+    key === 'MediaRewind' ||
+    keyCode === 21 ||
+    keyCode === 89
+  ) {
+    callbacks.onSeek(-10);
+    return true;
+  }
+
+  // Right arrow / Fast Forward
+  if (
+    key === 'ArrowRight' ||
+    key === 'MediaFastForward' ||
+    keyCode === 22 ||
+    keyCode === 90
+  ) {
+    callbacks.onSeek(10);
+    return true;
+  }
+
+  // Back button
+  if (
+    key === 'Escape' ||
+    key === 'Backspace' ||
+    key === 'GoBack' ||
+    key === 'Back' ||
+    keyCode === 4 ||
+    keyCode === 27 ||
+    keyCode === 8
+  ) {
+    callbacks.onBack();
+    return true;
+  }
+
+  return false;
 }
 
 export interface TvPlayerProps {
@@ -59,13 +103,15 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   const hudTimerRef = useRef<NodeJS.Timeout | null>(null);
   const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSeekRef = useRef<number | null>(video.resume_time > 0 ? video.resume_time : null);
+  const showOsdRef = useRef(showOsd);
+  showOsdRef.current = showOsd;
 
   const resetOsdTimer = useCallback(() => {
     setShowOsd(true);
     if (osdTimerRef.current) clearTimeout(osdTimerRef.current);
     osdTimerRef.current = setTimeout(() => {
       setShowOsd(false);
-    }, 3500);
+    }, 4000);
   }, []);
 
   const showHud = useCallback((msg: string) => {
@@ -91,6 +137,15 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
     }
     resetOsdTimer();
   }, [resetOsdTimer, showHud]);
+
+  // Center button behavior: 1st click wakes up controls; 2nd click toggles play/pause
+  const handleCenterClick = useCallback(() => {
+    if (!showOsdRef.current) {
+      resetOsdTimer();
+    } else {
+      togglePlay();
+    }
+  }, [resetOsdTimer, togglePlay]);
 
   const seek = useCallback((delta: number) => {
     if (videoRef.current) {
@@ -174,28 +229,51 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
 
   // Remote keyboard listener when player is active
   useEffect(() => {
-    if (hasPlaybackError) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
+      // If error screen is shown, handle Back key to exit player
+      if (hasPlaybackError) {
+        if (
+          e.key === 'Escape' ||
+          e.key === 'Backspace' ||
+          e.key === 'GoBack' ||
+          e.key === 'Back' ||
+          (e as any).keyCode === 4
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleBack();
+        }
+        return;
+      }
+
       const handled = handlePlayerRemoteKey(e, {
+        onCenterClick: handleCenterClick,
         onTogglePlay: togglePlay,
         onSeek: seek,
         onBack: handleBack,
       });
       if (handled) {
         e.preventDefault();
+        e.stopPropagation();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    const handleCustomBack = (e: Event) => {
+      e.preventDefault();
+      handleBack();
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('tvbackbutton', handleCustomBack);
     resetOsdTimer();
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('tvbackbutton', handleCustomBack);
       if (osdTimerRef.current) clearTimeout(osdTimerRef.current);
       if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     };
-  }, [togglePlay, seek, handleBack, resetOsdTimer, hasPlaybackError]);
+  }, [handleCenterClick, togglePlay, seek, handleBack, resetOsdTimer, hasPlaybackError]);
 
   // Error screen focus buttons
   const retryBtnFocus = useTvFocus<HTMLButtonElement>({
