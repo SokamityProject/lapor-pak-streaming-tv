@@ -137,25 +137,29 @@ class SpatialNavigationManager {
         case 'right':
           if (dx > 5) {
             isValidDirection = true;
-            score = dx + Math.abs(dy) * 2.5;
+            // Lock horizontal navigation to the current row by strongly penalizing vertical offset
+            score = dx + Math.abs(dy) * 3.5;
           }
           break;
         case 'left':
           if (dx < -5) {
             isValidDirection = true;
-            score = Math.abs(dx) + Math.abs(dy) * 2.5;
+            // Lock horizontal navigation to the current row by strongly penalizing vertical offset
+            score = Math.abs(dx) + Math.abs(dy) * 3.5;
           }
           break;
         case 'down':
           if (dy > 5) {
             isValidDirection = true;
-            score = dy + Math.abs(dx) * 2.5;
+            // Prioritize the nearest vertical band/row; horizontal distance is secondary
+            score = dy * 2.5 + Math.abs(dx);
           }
           break;
         case 'up':
           if (dy < -5) {
             isValidDirection = true;
-            score = Math.abs(dy) + Math.abs(dx) * 2.5;
+            // Prioritize the nearest vertical band/row; horizontal distance is secondary
+            score = Math.abs(dy) * 2.5 + Math.abs(dx);
           }
           break;
       }
