@@ -23,13 +23,14 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
       SpatialNavigation.register(
         id,
         {
-          x: rect.left + window.scrollX,
-          y: rect.top + window.scrollY,
+          x: rect.left + (typeof window !== 'undefined' ? window.scrollX : 0),
+          y: rect.top + (typeof window !== 'undefined' ? window.scrollY : 0),
           width: rect.width,
           height: rect.height,
         },
         onSelect,
-        groupId
+        groupId,
+        ref.current
       );
     }
   }, [id, onSelect, groupId]);
@@ -46,7 +47,7 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
       setIsFocused(focused);
       if (focused && ref.current) {
         ref.current.scrollIntoView({
-          behavior: 'smooth',
+          behavior: 'auto',
           block: 'nearest',
           inline: 'center',
         });

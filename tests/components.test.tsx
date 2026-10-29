@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TvVideoCard } from '../src/components/TvVideoCard';
 import { TvNavbar } from '../src/components/TvNavbar';
+import { TvRetryButton } from '../src/pages/TvHomePage';
 
 describe('TV UI Components', () => {
   it('renders TvVideoCard with title, duration badge, and focused golden border class', () => {
@@ -31,5 +32,13 @@ describe('TV UI Components', () => {
     expect(screen.getByText('LAPOR PAK! TV')).toBeDefined();
     expect(screen.getByText('Beranda')).toBeDefined();
     expect(screen.getByText('Playlist')).toBeDefined();
+  });
+
+  it('renders focusable TvRetryButton with remote focus styling when focused', () => {
+    const { container } = render(<TvRetryButton isFocused={true} onRetry={() => {}} />);
+    expect(screen.getByText(/Coba Lagi/)).toBeDefined();
+    const btn = container.firstElementChild as HTMLElement;
+    expect(btn.className).toContain('shadow-tv-focus');
+    expect(btn.className).toContain('scale-105');
   });
 });

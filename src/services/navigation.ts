@@ -10,6 +10,7 @@ export interface FocusItem {
   rect: Rect;
   onSelect?: () => void;
   groupId?: string;
+  element?: HTMLElement;
 }
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
@@ -17,11 +18,13 @@ export type Direction = 'up' | 'down' | 'left' | 'right';
 class SpatialNavigationManager {
   private items = new Map<string, FocusItem>();
   private currentFocusId: string | null = null;
+  private activeScopeId: string | null = null;
   private listeners = new Set<(id: string | null) => void>();
   private isListening = false;
+  private lastKeyTime = 0;
 
-  public register(id: string, rect: Rect, onSelect?: () => void, groupId?: string): void {
-    this.items.set(id, { id, rect, onSelect, groupId });
+  public register(id: string, rect: Rect, onSelect?: () => void, groupId?: string, element?: HTMLElement): void {
+    this.items.set(id, { id, rect, onSelect, groupId, element });
     if (!this.currentFocusId) {
       this.setFocus(id);
     }
@@ -37,10 +40,24 @@ class SpatialNavigationManager {
   public unregister(id: string): void {
     this.items.delete(id);
     if (this.currentFocusId === id) {
-      // Pick next available
-      const next = this.items.keys().next().value;
-      this.setFocus(next || null);
+      const candidates = this.getCandidates();
+      const next = candidates.length > 0 ? candidates[0].id : null;
+      this.setFocus(next);
     }
+  }
+
+  public setScope(scopeId: string | null): void {
+    this.activeScopeId = scopeId;
+    if (scopeId) {
+      const scopedItems = this.getCandidates();
+      if (scopedItems.length > 0 && (!this.currentFocusId || !scopedItems.some(i => i.id === this.currentFocusId))) {
+        this.setFocus(scopedItems[0].id);
+      }
+    }
+  }
+
+  public getScope(): string | null {
+    return this.activeScopeId;
   }
 
   public setFocus(id: string | null): void {
@@ -57,6 +74,7 @@ class SpatialNavigationManager {
   public reset(): void {
     this.items.clear();
     this.currentFocusId = null;
+    this.activeScopeId = null;
     this.listeners.clear();
   }
 
@@ -65,28 +83,50 @@ class SpatialNavigationManager {
     return () => this.listeners.delete(listener);
   }
 
+  private getItemRect(item: FocusItem): Rect {
+    if (item.element && typeof item.element.getBoundingClientRect === 'function') {
+      const b = item.element.getBoundingClientRect();
+      return {
+        x: b.left + (typeof window !== 'undefined' ? window.scrollX : 0),
+        y: b.top + (typeof window !== 'undefined' ? window.scrollY : 0),
+        width: b.width,
+        height: b.height,
+      };
+    }
+    return item.rect;
+  }
+
+  private getCandidates(): FocusItem[] {
+    const all = Array.from(this.items.values());
+    if (this.activeScopeId) {
+      return all.filter((i) => i.groupId === this.activeScopeId);
+    }
+    return all;
+  }
+
   public move(direction: Direction): boolean {
+    const candidates = this.getCandidates();
+    if (candidates.length === 0) return false;
+
     if (!this.currentFocusId || !this.items.has(this.currentFocusId)) {
-      const first = this.items.keys().next().value;
-      if (first) {
-        this.setFocus(first);
-        return true;
-      }
-      return false;
+      this.setFocus(candidates[0].id);
+      return true;
     }
 
     const current = this.items.get(this.currentFocusId)!;
-    const curCx = current.rect.x + current.rect.width / 2;
-    const curCy = current.rect.y + current.rect.height / 2;
+    const currentRect = this.getItemRect(current);
+    const curCx = currentRect.x + currentRect.width / 2;
+    const curCy = currentRect.y + currentRect.height / 2;
 
     let bestId: string | null = null;
     let minScore = Infinity;
 
-    for (const [id, candidate] of this.items.entries()) {
-      if (id === this.currentFocusId) continue;
+    for (const candidate of candidates) {
+      if (candidate.id === this.currentFocusId) continue;
 
-      const candCx = candidate.rect.x + candidate.rect.width / 2;
-      const candCy = candidate.rect.y + candidate.rect.height / 2;
+      const candRect = this.getItemRect(candidate);
+      const candCx = candRect.x + candRect.width / 2;
+      const candCy = candRect.y + candRect.height / 2;
       const dx = candCx - curCx;
       const dy = candCy - curCy;
 
@@ -122,7 +162,7 @@ class SpatialNavigationManager {
 
       if (isValidDirection && score < minScore) {
         minScore = score;
-        bestId = id;
+        bestId = candidate.id;
       }
     }
 
@@ -149,6 +189,14 @@ class SpatialNavigationManager {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Key repeat throttling (70ms) to prevent dropped frames on TV remote long-press
+      const now = performance.now();
+      if (e.repeat && now - this.lastKeyTime < 70) {
+        e.preventDefault();
+        return;
+      }
+      this.lastKeyTime = now;
+
       let handled = false;
       switch (e.key) {
         case 'ArrowUp':

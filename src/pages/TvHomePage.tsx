@@ -1,11 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { HomeFeedData } from '../types/api';
-import { fetchHomeFeed, initTvSession } from '../services/api';
+import React, { useEffect, useState, useCallback } from 'react';
+import { HomeFeedData, VideoItem } from '../types/api';
+import { fetchHomeFeed, fetchPlaylist, initTvSession } from '../services/api';
 import { TvNavbar } from '../components/TvNavbar';
 import { TvHeroSpotlight } from '../components/TvHeroSpotlight';
 import { TvRowRail } from '../components/TvRowRail';
+import { TvVideoCard } from '../components/TvVideoCard';
 import { SpatialNavigation } from '../services/navigation';
+import { useTvFocus } from '../hooks/useTvFocus';
 import { Loader2, AlertCircle } from 'lucide-react';
+
+export interface TvRetryButtonProps {
+  onRetry: () => void;
+  isFocused?: boolean;
+}
+
+export const TvRetryButton: React.FC<TvRetryButtonProps> = ({ onRetry, isFocused: externalFocused }) => {
+  const { ref, isFocused: hookFocused } = useTvFocus<HTMLButtonElement>({
+    id: 'btn-retry',
+    autoFocus: true,
+    onSelect: onRetry,
+    groupId: 'error-screen',
+  });
+
+  const focused = externalFocused !== undefined ? externalFocused : hookFocused;
+
+  return (
+    <button
+      ref={ref}
+      onClick={onRetry}
+      className={`px-6 py-2.5 bg-brand text-slate-950 font-extrabold text-sm rounded-xl transition-all duration-150 cursor-pointer ${
+        focused
+          ? 'shadow-tv-focus scale-105 ring-4 ring-white/50'
+          : 'hover:bg-amber-400 opacity-90'
+      }`}
+    >
+      Coba Lagi (OK)
+    </button>
+  );
+};
 
 export interface TvHomePageProps {
   onPlayVideo: (slug: string) => void;
@@ -14,37 +46,48 @@ export interface TvHomePageProps {
 export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
   const [activeTab, setActiveTab] = useState<'home' | 'playlist' | 'history'>('home');
   const [feed, setFeed] = useState<HomeFeedData | null>(null);
+  const [playlistVideos, setPlaylistVideos] = useState<VideoItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const unbindKeys = SpatialNavigation.initGlobalKeyboardListener();
-
-    async function loadData() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        await initTvSession();
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    SpatialNavigation.setScope(null);
+    try {
+      await initTvSession();
+      if (activeTab === 'home' || activeTab === 'history') {
         const data = await fetchHomeFeed();
         setFeed(data);
-      } catch (err: any) {
-        console.error('Failed to load TV feed:', err);
-        setError('Gagal menghubungkan ke server TV. Pastikan koneksi internet aktif.');
-      } finally {
-        setIsLoading(false);
+      } else if (activeTab === 'playlist') {
+        const data = await fetchPlaylist();
+        setPlaylistVideos(data.items || []);
       }
+    } catch (err: any) {
+      console.error('Failed to load TV feed:', err);
+      setError('Gagal menghubungkan ke server TV. Pastikan koneksi internet aktif.');
+      SpatialNavigation.setScope('error-screen');
+    } finally {
+      setIsLoading(false);
     }
+  }, [activeTab]);
 
+  useEffect(() => {
+    const unbindKeys = SpatialNavigation.initGlobalKeyboardListener();
     loadData();
 
     return () => {
       unbindKeys();
     };
-  }, []);
+  }, [loadData]);
+
+  const handleTabChange = (tab: 'home' | 'playlist' | 'history') => {
+    setActiveTab(tab);
+  };
 
   return (
     <div className="min-h-screen bg-background text-white px-12 py-8 select-none">
-      <TvNavbar activeTab={activeTab} onSelectTab={setActiveTab} />
+      <TvNavbar activeTab={activeTab} onSelectTab={handleTabChange} />
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
@@ -54,16 +97,25 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
           </span>
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-          <AlertCircle className="w-10 h-10 text-red-500" />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5">
+          <AlertCircle className="w-12 h-12 text-red-500" />
           <p className="text-sm text-slate-300 max-w-md text-center">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-5 py-2 bg-brand text-slate-950 font-bold text-xs rounded-lg shadow-tv-focus"
-          >
-            Coba Lagi (OK)
-          </button>
+          <TvRetryButton onRetry={loadData} />
         </div>
+      ) : activeTab === 'playlist' ? (
+        <main>
+          <h2 className="text-xl font-bold text-white mb-6">Semua Episode Playlist</h2>
+          <div className="grid grid-cols-4 gap-6 pb-12">
+            {playlistVideos.map((video, idx) => (
+              <TvVideoCard
+                key={video.id}
+                id={`playlist-card-${idx}`}
+                video={video}
+                onSelect={() => onPlayVideo(video.slug)}
+              />
+            ))}
+          </div>
+        </main>
       ) : (
         <main>
           {/* Hero Spotlight for latest video */}

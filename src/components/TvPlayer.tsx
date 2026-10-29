@@ -45,6 +45,7 @@ export interface TvPlayerProps {
 export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [currentSrc, setCurrentSrc] = useState(video.hd || video.sd);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showOsd, setShowOsd] = useState(true);
@@ -52,6 +53,7 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
 
   const osdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hudTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetOsdTimer = useCallback(() => {
     setShowOsd(true);
@@ -66,7 +68,7 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
     if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     hudTimerRef.current = setTimeout(() => {
       setHudMessage(null);
-    }, 1200);
+    }, 1500);
   }, []);
 
   const togglePlay = useCallback(() => {
@@ -94,18 +96,39 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
     resetOsdTimer();
   }, [resetOsdTimer, showHud]);
 
-  const handleBack = useCallback(() => {
+  const handleBack = useCallback(async () => {
     if (videoRef.current) {
-      saveProgress(
-        video.id,
-        videoRef.current.currentTime,
-        videoRef.current.currentTime >= (videoRef.current.duration || 0) * 0.95
-      ).catch(() => {});
+      try {
+        await saveProgress(
+          video.id,
+          videoRef.current.currentTime,
+          videoRef.current.currentTime >= (videoRef.current.duration || 0) * 0.95
+        );
+      } catch (e) {
+        console.error('Failed to save progress on exit:', e);
+      }
     }
     onClose();
   }, [video.id, onClose]);
 
-  // Set up remote keyboard listener
+  // Periodic watch progress sync every 25 seconds
+  useEffect(() => {
+    syncTimerRef.current = setInterval(() => {
+      if (videoRef.current && !videoRef.current.paused) {
+        saveProgress(
+          video.id,
+          videoRef.current.currentTime,
+          videoRef.current.currentTime >= (videoRef.current.duration || 0) * 0.95
+        ).catch(() => {});
+      }
+    }, 25000);
+
+    return () => {
+      if (syncTimerRef.current) clearInterval(syncTimerRef.current);
+    };
+  }, [video.id]);
+
+  // Remote keyboard listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const handled = handlePlayerRemoteKey(e, {
@@ -136,22 +159,31 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
     }
   }, [video.resume_time]);
 
+  // Video error fallback: from HD to SD
+  const handleVideoError = () => {
+    if (currentSrc === video.hd && video.sd) {
+      showHud('HD Gagal, Beralih ke SD...');
+      setCurrentSrc(video.sd);
+    } else {
+      showHud('Gagal memutar video');
+    }
+  };
+
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const streamSrc = video.hd || video.sd;
-
   return (
     <div className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden">
       <video
         ref={videoRef}
-        src={streamSrc}
+        src={currentSrc}
         poster={video.thumbnail}
         autoPlay
         playsInline
+        onError={handleVideoError}
         className="w-full h-full object-contain"
         onTimeUpdate={() => {
           if (videoRef.current) {
@@ -211,7 +243,7 @@ export const TvPlayer: React.FC<TvPlayerProps> = ({ video, onClose }) => {
 
           <div className="flex items-center gap-3 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300">
             <Shield className="w-4 h-4 text-brand" />
-            <span>{isPlaying ? 'Sedang Diputar' : 'Dijeda'} • {video.hd ? 'HD 1080p' : 'SD 720p'}</span>
+            <span>{isPlaying ? 'Sedang Diputar' : 'Dijeda'} • {currentSrc === video.hd ? 'HD 1080p' : 'SD 720p'}</span>
           </div>
         </div>
 
