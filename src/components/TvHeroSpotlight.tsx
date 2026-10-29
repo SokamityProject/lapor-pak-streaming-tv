@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VideoItem } from '../types/api';
 import { useTvFocus } from '../hooks/useTvFocus';
 import { Play } from 'lucide-react';
@@ -15,10 +15,35 @@ export const TvHeroSpotlight: React.FC<TvHeroSpotlightProps> = ({ video, onPlay 
     autoFocus: true,
   });
 
+  const [backdropSrc, setBackdropSrc] = useState<string>(video?.thumbnail || '');
+  const [backdropError, setBackdropError] = useState(false);
+
+  const handleBackdropError = () => {
+    if (backdropSrc && !backdropSrc.startsWith('http')) {
+      const cleanPath = backdropSrc.startsWith('/') ? backdropSrc : `/${backdropSrc}`;
+      setBackdropSrc(`https://laporpak.my.to${cleanPath}`);
+    } else {
+      setBackdropError(true);
+    }
+  };
+
   if (!video) return null;
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden mb-8 border border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-8 shadow-2xl">
+      {/* Background artwork */}
+      {backdropSrc && !backdropError && (
+        <div className="absolute right-0 top-0 bottom-0 w-3/5 opacity-30 overflow-hidden pointer-events-none">
+          <img
+            src={backdropSrc}
+            alt=""
+            onError={handleBackdropError}
+            className="w-full h-full object-cover mask-gradient"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
+        </div>
+      )}
+
       <div className="max-w-2xl z-10 relative">
         <div className="inline-flex items-center gap-2 bg-red-600/90 text-white font-extrabold text-[11px] px-2.5 py-1 rounded-md mb-3 tracking-wider">
           <span>EPISODE TERBARU</span>

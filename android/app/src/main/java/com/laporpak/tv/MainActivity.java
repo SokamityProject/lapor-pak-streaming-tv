@@ -2,6 +2,7 @@ package com.laporpak.tv;
 
 import android.net.http.SslError;
 import android.os.Bundle;
+import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
@@ -35,9 +36,15 @@ public class MainActivity extends BridgeActivity {
                 }
             });
 
-            // Also configure webview user-agent
+            // Configure WebView settings & cookies
             try {
-                bridge.getWebView().getSettings().setUserAgentString(TV_USER_AGENT);
+                WebView wv = bridge.getWebView();
+                if (wv != null) {
+                    wv.getSettings().setUserAgentString(TV_USER_AGENT);
+                    CookieManager cm = CookieManager.getInstance();
+                    cm.setAcceptCookie(true);
+                    cm.setAcceptThirdPartyCookies(wv, true);
+                }
             } catch (Exception ignored) {}
         }
     }

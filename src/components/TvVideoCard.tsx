@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VideoItem } from '../types/api';
 import { useTvFocus } from '../hooks/useTvFocus';
+import { Tv } from 'lucide-react';
 
 export interface TvVideoCardProps {
   video: VideoItem;
@@ -22,6 +23,19 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
 
   const focused = externalFocused !== undefined ? externalFocused : hookFocused;
 
+  const [imgSrc, setImgSrc] = useState<string>(video.thumbnail || '');
+  const [hasError, setHasError] = useState(false);
+
+  const handleImgError = () => {
+    if (imgSrc && !imgSrc.startsWith('http')) {
+      // Fallback from relative path to remote server URL
+      const cleanPath = imgSrc.startsWith('/') ? imgSrc : `/${imgSrc}`;
+      setImgSrc(`https://laporpak.my.to${cleanPath}`);
+    } else {
+      setHasError(true);
+    }
+  };
+
   return (
     <div
       ref={ref}
@@ -34,15 +48,21 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
     >
       {/* Thumbnail Container */}
       <div className="relative aspect-video w-full bg-slate-900 overflow-hidden flex items-center justify-center">
-        {video.thumbnail ? (
+        {imgSrc && !hasError ? (
           <img
-            src={video.thumbnail}
+            src={imgSrc}
             alt={video.title}
+            onError={handleImgError}
             className="w-full h-full object-cover"
             loading="lazy"
           />
         ) : (
-          <div className="text-slate-600 text-xs font-medium">Lapor Pak!</div>
+          <div className="flex flex-col items-center justify-center gap-1.5 p-3 text-slate-500">
+            <Tv className="w-8 h-8 text-brand/60" />
+            <span className="text-[11px] font-semibold text-slate-400 text-center line-clamp-1">
+              Lapor Pak!
+            </span>
+          </div>
         )}
 
         {/* Episode Badge */}
@@ -59,25 +79,23 @@ export const TvVideoCard: React.FC<TvVideoCardProps> = ({
 
         {/* Progress Bar */}
         {video.progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-800">
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-800/80">
             <div
               className="h-full bg-brand transition-all duration-300"
-              style={{ width: `${Math.min(100, Math.max(5, video.progress))}%` }}
+              style={{ width: `${Math.min(100, Math.max(0, video.progress))}%` }}
             />
           </div>
         )}
       </div>
 
-      {/* Title & Info */}
-      <div className="p-3 bg-cardSecondary/60 flex-1 flex flex-col justify-between">
-        <h4 className="text-xs font-semibold text-slate-100 line-clamp-2 leading-relaxed">
+      {/* Title & Metadata */}
+      <div className="p-3 bg-card flex flex-col gap-1">
+        <h3 className="font-bold text-sm text-white line-clamp-1 group-hover:text-brand">
           {video.title}
-        </h4>
-        {video.last_time !== undefined && video.last_time > 0 && (
-          <span className="text-[10px] text-amber-400/90 font-medium mt-1">
-            Lanjut menit ke-{Math.floor(video.last_time / 60)}
-          </span>
-        )}
+        </h3>
+        <span className="text-[11px] text-slate-400">
+          Episode {video.episode}
+        </span>
       </div>
     </div>
   );
