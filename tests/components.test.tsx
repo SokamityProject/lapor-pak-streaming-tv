@@ -5,7 +5,8 @@ import { TvRowRail } from '../src/components/TvRowRail';
 import { TvNavbar } from '../src/components/TvNavbar';
 import { TvSidebar } from '../src/components/TvSidebar';
 import { TvHeroSpotlight } from '../src/components/TvHeroSpotlight';
-import { TvRetryButton } from '../src/pages/TvHomePage';
+import { TvRetryButton, TvHomePage } from '../src/pages/TvHomePage';
+import { TvExitModal, exitTvApp } from '../src/components/TvExitModal';
 import { useTvFocus } from '../src/hooks/useTvFocus';
 import { SpatialNavigation } from '../src/services/navigation';
 
@@ -332,5 +333,142 @@ describe('TV UI Components', () => {
     act(() => {
       SpatialNavigation.reset();
     });
+  });
+
+  it('renders TvExitModal with high-contrast OLED styling, Batal, and Keluar buttons', () => {
+    SpatialNavigation.reset();
+    const handleConfirm = vi.fn();
+    const handleCancel = vi.fn();
+
+    const { unmount } = render(
+      <TvExitModal onConfirm={handleConfirm} onCancel={handleCancel} />
+    );
+
+    expect(screen.getByText('Keluar dari Aplikasi?')).toBeDefined();
+    expect(screen.getByText(/Apakah Anda yakin ingin menutup/i)).toBeDefined();
+
+    const cancelBtn = screen.getByTestId('exit-cancel-btn');
+    const confirmBtn = screen.getByTestId('exit-confirm-btn');
+
+    expect(cancelBtn).toBeDefined();
+    expect(cancelBtn.textContent).toContain('Batal');
+    expect(confirmBtn).toBeDefined();
+    expect(confirmBtn.textContent).toContain('Keluar Aplikasi');
+
+    // Verify scope is set to 'exit-modal' and default focus is Batal
+    expect(SpatialNavigation.getScope()).toBe('exit-modal');
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-cancel-btn');
+
+    // Test cancel action
+    fireEvent.click(cancelBtn);
+    expect(handleCancel).toHaveBeenCalledTimes(1);
+
+    // Test confirm action
+    fireEvent.click(confirmBtn);
+    expect(handleConfirm).toHaveBeenCalledTimes(1);
+
+    unmount();
+    // Scope should be reset to null on unmount
+    expect(SpatialNavigation.getScope()).toBeNull();
+    SpatialNavigation.reset();
+  });
+
+  it('exitTvApp calls TvAppBridge.exitApp when available, or window.close fallback', () => {
+    const originalBridge = (window as any).TvAppBridge;
+    const mockExit = vi.fn();
+    (window as any).TvAppBridge = { exitApp: mockExit };
+
+    exitTvApp();
+    expect(mockExit).toHaveBeenCalledTimes(1);
+
+    delete (window as any).TvAppBridge;
+    const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {});
+    exitTvApp();
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+    closeSpy.mockRestore();
+
+    if (originalBridge) {
+      (window as any).TvAppBridge = originalBridge;
+    }
+  });
+
+  it('TvHomePage renders two-pane OTT shell layout and handles two-tier remote back flow', async () => {
+    SpatialNavigation.reset();
+
+    const mockFeed = {
+      ok: true,
+      user: { id: 1 },
+      hero: {
+        id: 999,
+        title: 'Hero Video',
+        slug: 'hero-video',
+        thumbnail: 'https://example.com/hero.jpg',
+        duration: '45:00',
+        episode: '1',
+      },
+      continue_watching: [],
+      recent_months: [],
+    };
+
+    const origFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '',
+      json: async () => mockFeed,
+      headers: { get: () => null },
+    } as unknown as Response);
+
+    const handlePlayVideo = vi.fn();
+    const handleExitApp = vi.fn();
+
+    const { container, unmount } = render(
+      <TvHomePage onPlayVideo={handlePlayVideo} onExitApp={handleExitApp} />
+    );
+
+    // Root container has 2-pane OTT layout classes
+    const rootEl = container.firstElementChild as HTMLElement;
+    expect(rootEl.className).toContain('flex');
+    expect(rootEl.className).toContain('h-screen');
+    expect(rootEl.className).toContain('bg-[#060913]');
+
+    // Sidebar is present with 4 navigation items
+    expect(screen.getByTestId('nav-home')).toBeDefined();
+    expect(screen.getByTestId('nav-playlist')).toBeDefined();
+    expect(screen.getByTestId('nav-history')).toBeDefined();
+    expect(screen.getByTestId('nav-exit')).toBeDefined();
+
+    // Tier 1: When focus is in content (e.g. hero-play-btn or a card), Back returns to sidebar
+    act(() => {
+      SpatialNavigation.setFocus('hero-play-btn');
+    });
+    expect(SpatialNavigation.getCurrentFocus()).toBe('hero-play-btn');
+
+    // Fire Back event (Escape)
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    // Focus should now be returned to active sidebar tab ('nav-home')
+    expect(SpatialNavigation.getCurrentFocus()).toBe('nav-home');
+
+    // Tier 2: When focus is in sidebar ('nav-home'), Back opens TvExitModal
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(screen.getByText('Keluar dari Aplikasi?')).toBeDefined();
+    expect(SpatialNavigation.getScope()).toBe('exit-modal');
+    expect(SpatialNavigation.getCurrentFocus()).toBe('exit-cancel-btn');
+
+    // Tier 0: When Exit Modal is open, Back closes the modal and resumes sidebar focus
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(screen.queryByText('Keluar dari Aplikasi?')).toBeNull();
+    expect(SpatialNavigation.getScope()).toBeNull();
+    expect(SpatialNavigation.getCurrentFocus()).toBe('nav-home');
+
+    unmount();
+    SpatialNavigation.reset();
+    global.fetch = origFetch;
   });
 });

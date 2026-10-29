@@ -22,6 +22,8 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
 }: UseTvFocusOptions) {
   const ref = useRef<T | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
 
   const measureAndRegister = useCallback(() => {
     if (ref.current) {
@@ -34,12 +36,12 @@ export function useTvFocus<T extends HTMLElement = HTMLDivElement>({
           width: rect.width,
           height: rect.height,
         },
-        onSelect,
+        () => onSelectRef.current?.(),
         groupId,
         ref.current
       );
     }
-  }, [id, onSelect, groupId]);
+  }, [id, groupId]);
 
   useEffect(() => {
     measureAndRegister();
