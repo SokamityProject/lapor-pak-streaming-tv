@@ -5,7 +5,7 @@ import { WatchVideoDetails } from './types/api';
 import { fetchWatchDetails } from './services/api';
 import { SpatialNavigation } from './services/navigation';
 import { useTvFocus } from './hooks/useTvFocus';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, LogOut } from 'lucide-react';
 
 interface ExitModalProps {
   onConfirm: () => void;
@@ -34,24 +34,24 @@ const ExitModal: React.FC<ExitModalProps> = ({ onConfirm, onCancel }) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-      <div className="bg-card border-2 border-slate-700 rounded-2xl p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center">
-        <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4">
-          <AlertTriangle className="w-7 h-7 text-brand" />
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-6">
+      <div className="bg-[#0C111A] border border-white/15 rounded-3xl p-8 max-w-md w-full shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] flex flex-col items-center text-center">
+        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-4 text-amber-500 shadow-md">
+          <AlertTriangle className="w-7 h-7" />
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">Keluar dari Aplikasi?</h3>
-        <p className="text-slate-400 text-xs mb-8">
-          Apakah Anda yakin ingin menutup Lapor Pak! Streaming TV?
+        <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Keluar dari Aplikasi?</h3>
+        <p className="text-zinc-400 text-xs sm:text-sm mb-8 leading-relaxed max-w-xs">
+          Apakah Anda yakin ingin menutup Lapor Pak! Command Streaming Station TV?
         </p>
 
         <div className="flex items-center gap-4 w-full justify-center">
           <button
             ref={cancelFocus.ref}
             onClick={onCancel}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer ${
+            className={`px-7 py-3 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer ${
               cancelFocus.isFocused
-                ? 'bg-slate-700 text-white shadow-tv-focus scale-105 ring-2 ring-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-white/20 text-white shadow-tv-focus scale-105 ring-2 ring-white'
+                : 'bg-white/10 text-zinc-300 hover:bg-white/15 border border-white/10'
             }`}
           >
             Batal
@@ -59,13 +59,14 @@ const ExitModal: React.FC<ExitModalProps> = ({ onConfirm, onCancel }) => {
           <button
             ref={confirmFocus.ref}
             onClick={onConfirm}
-            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-150 cursor-pointer ${
+            className={`flex items-center gap-2 px-7 py-3 rounded-xl font-black text-sm transition-all duration-150 cursor-pointer ${
               confirmFocus.isFocused
                 ? 'bg-red-600 text-white shadow-tv-focus scale-105 ring-2 ring-white'
-                : 'bg-red-700 text-white hover:bg-red-600'
+                : 'bg-red-700/80 text-white hover:bg-red-600'
             }`}
           >
-            Ya, Keluar
+            <LogOut className="w-4 h-4" />
+            <span>Ya, Keluar</span>
           </button>
         </div>
       </div>
@@ -146,7 +147,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-background">
+    <div className="w-screen h-screen overflow-hidden ambient-precinct-bg text-white">
       {activeVideo ? (
         <TvPlayer video={activeVideo} onClose={handleClosePlayer} />
       ) : (

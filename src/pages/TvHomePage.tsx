@@ -8,7 +8,7 @@ import { TvVideoCard } from '../components/TvVideoCard';
 import { SpatialNavigation } from '../services/navigation';
 import { useTvFocus } from '../hooks/useTvFocus';
 import { getAllWatchedVideos } from '../services/localProgress';
-import { Loader2, AlertCircle, Tv } from 'lucide-react';
+import { Loader2, AlertTriangle, Tv, FolderArchive, History } from 'lucide-react';
 
 export interface TvRetryButtonProps {
   onRetry: () => void;
@@ -29,10 +29,10 @@ export const TvRetryButton: React.FC<TvRetryButtonProps> = ({ onRetry, isFocused
     <button
       ref={ref}
       onClick={onRetry}
-      className={`px-6 py-2.5 bg-brand text-slate-950 font-extrabold text-sm rounded-xl transition-all duration-150 cursor-pointer ${
+      className={`px-8 py-3 bg-brand text-slate-950 font-black text-sm rounded-xl transition-all duration-150 cursor-pointer ${
         focused
-          ? 'shadow-tv-focus scale-105 ring-4 ring-white/50'
-          : 'hover:bg-amber-400 opacity-90'
+          ? 'shadow-tv-focus scale-105 ring-4 ring-white/60'
+          : 'hover:bg-amber-400 opacity-90 shadow-md'
       }`}
     >
       Coba Lagi (OK)
@@ -92,28 +92,43 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-white px-12 py-8 select-none">
+    <div className="min-h-screen ambient-precinct-bg text-white px-10 md:px-14 py-8 select-none">
       <TvNavbar activeTab={activeTab} onSelectTab={handleTabChange} />
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-brand" />
-          <span className="text-sm font-medium text-slate-400">
-            Menghubungkan ke Lapor Pak! Hub...
+        <div className="flex flex-col items-center justify-center min-h-[65vh] gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center shadow-lg">
+            <Loader2 className="w-7 h-7 animate-spin text-amber-500" />
+          </div>
+          <p className="text-sm font-bold text-zinc-300 tracking-wide">
+            Menghubungkan ke Command Station Lapor Pak! TV...
+          </p>
+          <span className="text-xs text-zinc-500">
+            Mengambil data berkas dan riwayat tontonan
           </span>
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5">
-          <AlertCircle className="w-12 h-12 text-red-500" />
-          <p className="text-sm text-slate-300 max-w-md text-center">{error}</p>
+        <div className="flex flex-col items-center justify-center min-h-[65vh] gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 shadow-xl">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <div className="text-center max-w-lg space-y-2">
+            <h3 className="text-lg font-bold text-white">Gagal Memuat Konten</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">{error}</p>
+          </div>
           <TvRetryButton onRetry={loadData} />
         </div>
       ) : activeTab === 'playlist' ? (
-        <main>
-          <div className="flex items-center gap-3 mb-8">
-            <h2 className="text-2xl font-black text-white">Semua Episode Playlist</h2>
-            <span className="text-xs font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full">
-              {playlistVideos.length} Episode
+        <main className="animate-fade-in">
+          <div className="flex items-center gap-3.5 mb-8">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <FolderArchive className="w-5 h-5" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              Semua Berkas Playlist
+            </h2>
+            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+              {playlistVideos.length} Berkas
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-16">
@@ -129,21 +144,28 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
           </div>
         </main>
       ) : activeTab === 'history' ? (
-        <main>
-          <div className="flex items-center gap-3 mb-8">
-            <h2 className="text-2xl font-black text-white">Riwayat Menonton di TV Ini</h2>
-            <span className="text-xs font-bold text-brand bg-brand/10 border border-brand/20 px-3 py-1 rounded-full">
+        <main className="animate-fade-in">
+          <div className="flex items-center gap-3.5 mb-8">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <History className="w-5 h-5" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              Riwayat Tontonan TV Ini
+            </h2>
+            <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
               {historyVideos.length} Episode
             </span>
           </div>
           {historyVideos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-slate-500">
-              <Tv className="w-16 h-16 text-slate-700 mb-4" />
-              <p className="text-base font-semibold text-slate-400">
+            <div className="flex flex-col items-center justify-center py-28 text-zinc-500 bg-[#0C111A]/60 border border-white/5 rounded-3xl">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 mb-4">
+                <Tv className="w-8 h-8" />
+              </div>
+              <p className="text-base font-bold text-zinc-300">
                 Belum ada riwayat tontonan di perangkat TV ini.
               </p>
-              <p className="text-xs text-slate-500 mt-1">
-                Episode yang Anda tonton di TV akan otomatis tercatat di sini.
+              <p className="text-xs text-zinc-500 mt-1 max-w-sm text-center">
+                Episode komedi yang Anda tonton di TV ini akan otomatis disimpan secara lokal di sini.
               </p>
             </div>
           ) : (
@@ -161,7 +183,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({ onPlayVideo }) => {
           )}
         </main>
       ) : (
-        <main>
+        <main className="animate-fade-in">
           {/* Hero Spotlight for latest video */}
           {feed?.hero && (
             <TvHeroSpotlight
