@@ -56,12 +56,34 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
   const [activeTab, setActiveTab] = useState<'home' | 'playlist' | 'history'>('home');
   const [feed, setFeed] = useState<HomeFeedData | null>(null);
   const [playlistVideos, setPlaylistVideos] = useState<VideoItem[]>([]);
+  const [playlistCursor, setPlaylistCursor] = useState<string | null>(null);
+  const [playlistHasMore, setPlaylistHasMore] = useState<boolean>(false);
+  const [playlistTotal, setPlaylistTotal] = useState<number>(0);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [historyVideos, setHistoryVideos] = useState<VideoItem[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
   const previousFocusRef = useRef<string | null>(null);
+
+  const playlistVideosRef = useRef<VideoItem[]>(playlistVideos);
+  playlistVideosRef.current = playlistVideos;
+
+  const playlistCursorRef = useRef<string | null>(playlistCursor);
+  playlistCursorRef.current = playlistCursor;
+
+  const playlistHasMoreRef = useRef<boolean>(playlistHasMore);
+  playlistHasMoreRef.current = playlistHasMore;
+
+  const playlistTotalRef = useRef<number>(playlistTotal);
+  playlistTotalRef.current = playlistTotal;
+
+  const isLoadingMoreRef = useRef<boolean>(isLoadingMore);
+  isLoadingMoreRef.current = isLoadingMore;
+
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
 
   const initData = useCallback(async () => {
     setIsInitialLoading(true);
@@ -90,6 +112,67 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
     };
   }, [initData]);
 
+  const handleLoadMorePlaylist = useCallback(async () => {
+    if (isLoadingMoreRef.current || !playlistHasMoreRef.current) return;
+
+    setIsLoadingMore(true);
+    isLoadingMoreRef.current = true;
+
+    try {
+      const data = await fetchPlaylist({
+        cursor: playlistCursorRef.current,
+        limit: 24,
+      });
+
+      const newItems = data.items || [];
+      setPlaylistVideos((prev) => {
+        const existingIds = new Set(prev.map((v) => v.id));
+        const deduplicated = newItems.filter((v) => !existingIds.has(v.id));
+        const updated = [...prev, ...deduplicated];
+        playlistVideosRef.current = updated;
+        return updated;
+      });
+
+      const nextCursor = data.next_cursor ?? null;
+      setPlaylistCursor(nextCursor);
+      playlistCursorRef.current = nextCursor;
+
+      const hasMore = Boolean(data.has_more);
+      setPlaylistHasMore(hasMore);
+      playlistHasMoreRef.current = hasMore;
+
+      const total = typeof data.total === 'number' ? data.total : playlistTotalRef.current;
+      setPlaylistTotal(total);
+      playlistTotalRef.current = total;
+    } catch (err) {
+      console.error('Failed to load more playlist items:', err);
+    } finally {
+      setIsLoadingMore(false);
+      isLoadingMoreRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = SpatialNavigation.subscribe((currentId) => {
+      if (!currentId || activeTabRef.current !== 'playlist') return;
+      const match = currentId.match(/^playlist-card-(\d+)$/);
+      if (match) {
+        const idx = parseInt(match[1], 10);
+        if (
+          idx >= playlistVideosRef.current.length - 6 &&
+          playlistHasMoreRef.current &&
+          !isLoadingMoreRef.current
+        ) {
+          handleLoadMorePlaylist();
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [handleLoadMorePlaylist]);
+
   const handleTabChange = useCallback(
     async (tab: 'home' | 'playlist' | 'history') => {
       setActiveTab(tab);
@@ -99,8 +182,22 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
       } else if (tab === 'playlist' && playlistVideos.length === 0) {
         setIsTabLoading(true);
         try {
-          const data = await fetchPlaylist();
-          setPlaylistVideos(data.items || []);
+          const data = await fetchPlaylist({ limit: 24 });
+          const items = data.items || [];
+          setPlaylistVideos(items);
+          playlistVideosRef.current = items;
+
+          const nextCursor = data.next_cursor ?? null;
+          setPlaylistCursor(nextCursor);
+          playlistCursorRef.current = nextCursor;
+
+          const hasMore = Boolean(data.has_more);
+          setPlaylistHasMore(hasMore);
+          playlistHasMoreRef.current = hasMore;
+
+          const total = typeof data.total === 'number' ? data.total : items.length;
+          setPlaylistTotal(total);
+          playlistTotalRef.current = total;
         } catch (e) {
           console.error('Failed to load playlist:', e);
         } finally {
@@ -222,7 +319,7 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
                 Semua Berkas Playlist
               </h2>
               <span className="text-xs font-bold text-brand bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-full">
-                {playlistVideos.length} Berkas
+                Menampilkan {playlistVideos.length} dari {playlistTotal} Berkas
               </span>
             </div>
 
@@ -232,17 +329,32 @@ export const TvHomePage: React.FC<TvHomePageProps> = ({
                 <span className="text-xs font-medium">Memuat berkas playlist...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-6 pb-8">
-                {playlistVideos.map((video, idx) => (
-                  <TvVideoCard
-                    key={video.id}
-                    id={`playlist-card-${idx}`}
-                    video={video}
-                    className="w-full"
-                    onSelect={() => onPlayVideo(video.slug)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-3 gap-6 pb-8">
+                  {playlistVideos.map((video, idx) => (
+                    <TvVideoCard
+                      key={video.id}
+                      id={`playlist-card-${idx}`}
+                      video={video}
+                      className="w-full"
+                      onSelect={() => onPlayVideo(video.slug)}
+                    />
+                  ))}
+                </div>
+
+                {isLoadingMore && (
+                  <div className="flex items-center justify-center py-6 text-zinc-400 gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-brand" />
+                    <span className="text-xs font-medium">Memuat episode lainnya...</span>
+                  </div>
+                )}
+
+                {!isLoadingMore && !playlistHasMore && playlistVideos.length > 0 && (
+                  <div className="text-center py-6 text-xs text-zinc-500 font-medium">
+                    Semua {playlistTotal} episode telah dimuat
+                  </div>
+                )}
+              </>
             )}
           </main>
         ) : activeTab === 'history' ? (

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { TvVideoCard } from '../src/components/TvVideoCard';
 import { TvRowRail } from '../src/components/TvRowRail';
 import { TvNavbar } from '../src/components/TvNavbar';
@@ -593,6 +593,132 @@ describe('TV UI Components', () => {
     expect(screen.queryByText('Keluar dari Aplikasi?')).toBeNull();
     expect(SpatialNavigation.getScope()).toBeNull();
     expect(SpatialNavigation.getCurrentFocus()).toBe('nav-home');
+
+    unmount();
+    SpatialNavigation.reset();
+    global.fetch = origFetch;
+  });
+
+  it('lazy-loads next batch of playlist videos when focus approaches the bottom of the grid', async () => {
+    SpatialNavigation.reset();
+
+    const mockFeed = {
+      ok: true,
+      user: { id: 1 },
+      hero: null,
+      continue_watching: [],
+      recent_months: [],
+    };
+
+    const batch1Items = Array.from({ length: 24 }, (_, i) => ({
+      id: i + 1,
+      title: `Eps. ${i + 1} - Kasus Pertama`,
+      slug: `eps-${i + 1}`,
+      thumbnail: `https://example.com/thumb-${i + 1}.jpg`,
+      duration: '45:00',
+      episode: String(i + 1),
+      progress: 0,
+    }));
+
+    const batch2Items = Array.from({ length: 6 }, (_, i) => ({
+      id: i + 25,
+      title: `Eps. ${i + 25} - Kasus Lanjutan`,
+      slug: `eps-${i + 25}`,
+      thumbnail: `https://example.com/thumb-${i + 25}.jpg`,
+      duration: '45:00',
+      episode: String(i + 25),
+      progress: 0,
+    }));
+
+    const origFetch = global.fetch;
+    const fetchUrls: string[] = [];
+    global.fetch = vi.fn().mockImplementation(async (url: string) => {
+      fetchUrls.push(url);
+      if (url.includes('/videos/home')) {
+        return {
+          ok: true,
+          status: 200,
+          text: async () => '',
+          json: async () => mockFeed,
+          headers: { get: () => null },
+        } as unknown as Response;
+      }
+      if (url.includes('cursor=batch-2-cursor')) {
+        return {
+          ok: true,
+          status: 200,
+          text: async () => '',
+          json: async () => ({
+            items: batch2Items,
+            total: 30,
+            has_more: false,
+            next_cursor: null,
+          }),
+          headers: { get: () => null },
+        } as unknown as Response;
+      }
+      if (url.includes('/videos')) {
+        return {
+          ok: true,
+          status: 200,
+          text: async () => '',
+          json: async () => ({
+            items: batch1Items,
+            total: 30,
+            has_more: true,
+            next_cursor: 'batch-2-cursor',
+          }),
+          headers: { get: () => null },
+        } as unknown as Response;
+      }
+      return {
+        ok: true,
+        status: 200,
+        text: async () => '',
+        json: async () => ({ ok: true }),
+        headers: { get: () => null },
+      } as unknown as Response;
+    });
+
+    const handlePlayVideo = vi.fn();
+    const { unmount } = render(<TvHomePage onPlayVideo={handlePlayVideo} />);
+
+    // Switch to playlist tab
+    const playlistTab = screen.getByTestId('nav-playlist');
+    await act(async () => {
+      fireEvent.click(playlistTab);
+    });
+
+    // Wait for initial batch to load
+    await waitFor(() => {
+      expect(screen.getByText('Eps. 1 - Kasus Pertama')).toBeDefined();
+    });
+
+    // Verify initial count badge shows "Menampilkan 24 dari 30 Berkas"
+    expect(screen.getByText('Menampilkan 24 dari 30 Berkas')).toBeDefined();
+    expect(screen.getByText('Eps. 24 - Kasus Pertama')).toBeDefined();
+    expect(screen.queryByText('Eps. 25 - Kasus Lanjutan')).toBeNull();
+
+    // Focus on playlist-card-20 (approaching the bottom of the grid, idx >= 24 - 6 = 18)
+    await act(async () => {
+      SpatialNavigation.setFocus('playlist-card-20');
+    });
+
+    // Wait for batch 2 items to load and be appended
+    await waitFor(() => {
+      expect(screen.getByText('Eps. 25 - Kasus Lanjutan')).toBeDefined();
+    });
+
+    expect(screen.getByText('Eps. 30 - Kasus Lanjutan')).toBeDefined();
+    // Verify updated count badge shows "Menampilkan 30 dari 30 Berkas"
+    expect(screen.getByText('Menampilkan 30 dari 30 Berkas')).toBeDefined();
+    // Verify completion message when all loaded
+    expect(screen.getByText('Semua 30 episode telah dimuat')).toBeDefined();
+
+    // Verify fetch was called with cursor=batch-2-cursor and limit=24
+    const lazyFetchCall = fetchUrls.find((u) => u.includes('cursor=batch-2-cursor'));
+    expect(lazyFetchCall).toBeDefined();
+    expect(lazyFetchCall).toContain('limit=24');
 
     unmount();
     SpatialNavigation.reset();
