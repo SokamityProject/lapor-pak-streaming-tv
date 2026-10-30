@@ -42,3 +42,11 @@ export interface PlaylistData {
   has_more: boolean;
   next_cursor: string | null;
 }
+
+export interface FetchPlaylistOptions {
+  month?: string;
+  search?: string;
+  cursor?: string | null;
+  limit?: number;
+}
+

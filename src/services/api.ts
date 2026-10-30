@@ -1,5 +1,5 @@
 import { Capacitor, CapacitorHttp, CapacitorCookies } from '@capacitor/core';
-import { HomeFeedData, PlaylistData, WatchVideoDetails } from '../types/api';
+import { FetchPlaylistOptions, HomeFeedData, PlaylistData, WatchVideoDetails } from '../types/api';
 import { extractAndSolveChallenge } from './slowAes';
 import {
   applyLocalProgressToFeed,
@@ -259,13 +259,39 @@ export async function fetchHomeFeed(): Promise<HomeFeedData> {
   return applyLocalProgressToFeed(data);
 }
 
+export type { FetchPlaylistOptions };
+
 /**
  * Fetch playlist list with local TV playback progress.
+ * Accepts either an options object or legacy positional arguments (month, search).
  */
-export async function fetchPlaylist(month?: string, search?: string): Promise<PlaylistData> {
+export function fetchPlaylist(options?: FetchPlaylistOptions): Promise<PlaylistData>;
+export function fetchPlaylist(month?: string, search?: string): Promise<PlaylistData>;
+export async function fetchPlaylist(
+  optionsOrMonth?: FetchPlaylistOptions | string,
+  search?: string
+): Promise<PlaylistData> {
+  let month: string | undefined;
+  let searchParam: string | undefined;
+  let cursor: string | null | undefined;
+  let limit: number | undefined;
+
+  if (typeof optionsOrMonth === 'object' && optionsOrMonth !== null) {
+    month = optionsOrMonth.month;
+    searchParam = optionsOrMonth.search;
+    cursor = optionsOrMonth.cursor;
+    limit = optionsOrMonth.limit;
+  } else {
+    month = optionsOrMonth;
+    searchParam = search;
+  }
+
   const params = new URLSearchParams();
   if (month) params.append('month', month);
-  if (search) params.append('search', search);
+  if (searchParam) params.append('search', searchParam);
+  if (cursor) params.append('cursor', cursor);
+  if (typeof limit === 'number') params.append('limit', String(limit));
+
   const query = params.toString() ? `?${params.toString()}` : '';
   const data = await tvApiFetch<PlaylistData>(`/videos${query}`);
   return applyLocalProgressToPlaylist(data);

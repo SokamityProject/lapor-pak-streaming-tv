@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   initTvSession,
   fetchHomeFeed,
+  fetchPlaylist,
   fetchWatchDetails,
   saveProgress,
   ensureInfinityFreeCookie,
@@ -106,6 +107,75 @@ describe('TV API Service', () => {
     expect(details.hd).toBe('https://video.fbcdn.net/hd.mp4');
     expect(details.sd).toBe('https://video.fbcdn.net/sd.mp4');
     expect(details.title).toBe('Episode 1');
+  });
+
+  it('fetchPlaylist accepts cursor and limit options and passes them to API query', async () => {
+    const mockPlaylist = {
+      ok: true,
+      data: {
+        items: [{ id: 1, title: 'Episode 1', episode: '1', slug: 'eps-1', thumbnail: 'thumb.jpg', duration: '40:00', progress: 0 }],
+        total: 1,
+        has_more: false,
+        next_cursor: null
+      }
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '',
+      json: async () => mockPlaylist,
+    } as unknown as Response);
+
+    const result = await fetchPlaylist({ cursor: 'test-cursor-123', limit: 24, month: '2024-05', search: 'lapor' });
+    expect(result.items).toBeDefined();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('cursor=test-cursor-123'),
+      expect.anything()
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('limit=24'),
+      expect.anything()
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('month=2024-05'),
+      expect.anything()
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('search=lapor'),
+      expect.anything()
+    );
+  });
+
+  it('fetchPlaylist supports backwards-compatible positional arguments and no args', async () => {
+    const mockPlaylist = {
+      ok: true,
+      data: {
+        items: [{ id: 1, title: 'Episode 1', episode: '1', slug: 'eps-1', thumbnail: 'thumb.jpg', duration: '40:00', progress: 0 }],
+        total: 1,
+        has_more: false,
+        next_cursor: null
+      }
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '',
+      json: async () => mockPlaylist,
+    } as unknown as Response);
+
+    // Positional call
+    await fetchPlaylist('2024-05', 'lapor');
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/videos?month=2024-05&search=lapor'),
+      expect.anything()
+    );
+
+    // No args call
+    await fetchPlaylist();
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/videos$/),
+      expect.anything()
+    );
   });
 
   it('manages video progress locally without overriding remote user database', async () => {
